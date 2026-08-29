@@ -1,0 +1,553 @@
+<!doctype html>
+<!--
+  Christine Jewell . Daily Audio player, served at /d/{token}
+
+  CONFIG INJECTION (edge function contract)
+  The edge function serves this file after replacing the CJ:CONFIG marker in
+  <head> with one script tag:
+
+    <script>window.CJ = {
+      episodeTitle: "The Roommate Drift",
+      day: 3,                                  // 1-based
+      totalDays: 7,
+      audioUrl: "https://cdn.../track-a-day-3.mp3",
+      token: "d41cf3a09b7e...",                // the cj_deliveries token
+      optInUrl: "https://go.thechristinejewell.com"   // optional, expired-state CTA
+    };</script>
+
+  Expired or unknown token: inject window.CJ = { expired: true, optInUrl: "..." }
+  and the page renders a friendly expired state with an opt-in CTA. If window.CJ
+  is missing entirely the page falls back to that same state.
+
+  LISTEN TELEMETRY -> POST /api/listen-event   (Content-Type: application/json)
+    { "token": "...", "event": "...", "position_seconds": 41 }
+  Events:
+    "play"      once, on first play
+    "pct25"     once, when 25% of the track has been reached
+    "pct50"     once, at 50%
+    "pct75"     once, at 75%
+    "complete"  on ended
+    "pagehide"  via navigator.sendBeacon when the page is hidden or closed,
+                carrying the current position (drop-off point). Only sent after
+                playback has started. May arrive more than once; keep the latest.
+
+  LOCAL PREVIEW
+  Open player.html?demo=1 with no server: a short generated tone stands in for
+  the episode and telemetry logs to the console instead of the network.
+  A server-injected window.CJ always wins over demo mode.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d0805">
+<meta name="color-scheme" content="dark">
+<title>Daily Audio &middot; Christine Jewell</title>
+<link rel="icon" href="data:,">
+<script>
+// Hosted-static boot (8/29): Supabase blocks HTML serving, so this page lives
+// on static hosting and fetches its config by token from the funnel service.
+(function () {
+  if (window.CJ) return;
+  var t = (location.hash || "").replace(/^#t=/, "");
+  if (!t) return; // no token -> page's built-in expired state
+  var x = new XMLHttpRequest();
+  x.open("GET", "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/api/player-config?token=" + encodeURIComponent(t), false);
+  try { x.send(); window.CJ = JSON.parse(x.responseText); } catch (e) {}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0805;
+    --bg2:#150e08;
+    --ink:#f2e9d8;
+    --ink-dim:#af9d81;
+    --ink-faint:#7c6c55;
+    --gold:#b8964e;
+    --gold-2:#d4b36a;
+    --gold-deep:#8a6d33;
+    --line:rgba(184,150,78,.22);
+    --serif:'Cormorant Garamond',Georgia,'Times New Roman',serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 720px at 50% -12%, rgba(184,150,78,.16), transparent 62%),
+      radial-gradient(820px 560px at 50% 112%, rgba(122,84,34,.12), transparent 60%),
+      linear-gradient(#160e08, var(--bg));
+    background-color:var(--bg);
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  .shell{
+    width:100%;
+    max-width:430px;
+    margin:0 auto;
+    padding:40px 26px calc(20px + env(safe-area-inset-bottom));
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    animation:rise .7s cubic-bezier(.22,.61,.36,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  /* brand mark */
+  .mark{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:44px}
+  .monogram{
+    width:46px;height:46px;border-radius:50%;
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-style:italic;font-weight:500;
+    font-size:19px;color:var(--gold-2);letter-spacing:.04em;
+    box-shadow:0 0 24px rgba(184,150,78,.12);
+  }
+  .wordmark{
+    font-size:10.5px;font-weight:600;letter-spacing:.42em;
+    text-transform:uppercase;color:var(--ink-dim);
+    padding-left:.42em; /* balance the trailing letterspace */
+  }
+
+  /* views */
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;width:100%}
+  [hidden]{display:none !important}
+
+  .eyebrow{
+    display:flex;align-items:center;justify-content:center;gap:14px;
+    font-size:10.5px;font-weight:600;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--gold-2);margin-bottom:18px;white-space:nowrap;
+  }
+  .eyebrow .rule{display:block;width:26px;height:1px;background:var(--line)}
+
+  .title{
+    font-family:var(--serif);font-weight:600;
+    font-size:clamp(30px,8.6vw,40px);line-height:1.16;
+    letter-spacing:.005em;color:var(--ink);
+    margin:0 auto 26px;max-width:22ch;
+    text-wrap:balance;
+  }
+
+  .daydots{display:flex;gap:9px;justify-content:center;margin-bottom:40px}
+  .daydots i{
+    width:5px;height:5px;border-radius:50%;
+    background:transparent;border:1px solid rgba(184,150,78,.4);
+  }
+  .daydots i.done{background:var(--gold-deep);border-color:var(--gold-deep)}
+  .daydots i.now{
+    background:var(--gold-2);border-color:var(--gold-2);
+    box-shadow:0 0 0 3px rgba(212,179,106,.18),0 0 12px rgba(212,179,106,.5);
+  }
+
+  /* play button */
+  .play{
+    position:relative;
+    width:108px;height:108px;border-radius:50%;
+    border:none;cursor:pointer;
+    background:linear-gradient(148deg,#dcbd76 0%,var(--gold) 55%,#96762f 100%);
+    box-shadow:
+      0 14px 44px rgba(184,150,78,.28),
+      0 3px 10px rgba(0,0,0,.5),
+      inset 0 1px 0 rgba(255,241,209,.55),
+      inset 0 -2px 6px rgba(60,40,10,.35);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 34px;
+    transition:transform .18s ease,box-shadow .18s ease;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+  }
+  .play:active{transform:scale(.96)}
+  .play:focus-visible{outline:2px solid var(--gold-2);outline-offset:5px}
+  .play::before{
+    content:"";position:absolute;inset:-9px;border-radius:50%;
+    border:1px solid rgba(184,150,78,.3);pointer-events:none;
+  }
+  .play svg{width:36px;height:36px;fill:#241708;pointer-events:none}
+  .play .ic-pause{display:none}
+  .play.playing .ic-play{display:none}
+  .play.playing .ic-pause{display:block}
+  .play.loading::after{
+    content:"";position:absolute;inset:-9px;border-radius:50%;
+    border:2px solid transparent;border-top-color:var(--gold-2);
+    animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* scrubber */
+  .scrub-wrap{width:100%;max-width:330px;margin:0 auto}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:26px;background:transparent;cursor:pointer;display:block;
+  }
+  input[type=range]:disabled{opacity:.45;cursor:default}
+  input[type=range]::-webkit-slider-runnable-track{
+    height:4px;border-radius:999px;
+    background:linear-gradient(to right,var(--gold-2) 0 var(--p,0%),rgba(242,233,216,.14) var(--p,0%) 100%);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;margin-top:-5px;
+    background:var(--ink);border:none;
+    box-shadow:0 0 0 4px rgba(184,150,78,.22),0 2px 6px rgba(0,0,0,.5);
+    transition:transform .15s ease;
+  }
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.25)}
+  input[type=range]::-moz-range-track{height:4px;border-radius:999px;background:rgba(242,233,216,.14)}
+  input[type=range]::-moz-range-progress{height:4px;border-radius:999px;background:var(--gold-2)}
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--ink);border:none;
+    box-shadow:0 0 0 4px rgba(184,150,78,.22),0 2px 6px rgba(0,0,0,.5);
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--gold-2);outline-offset:4px;border-radius:999px}
+  .times{
+    display:flex;justify-content:space-between;
+    margin-top:8px;font-size:12px;font-weight:500;color:var(--ink-faint);
+    font-variant-numeric:tabular-nums;letter-spacing:.04em;
+  }
+  .audio-note{
+    margin-top:16px;font-size:12.5px;color:var(--ink-dim);line-height:1.5;
+  }
+
+  /* nudge */
+  .note{margin-top:52px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .note-rule{width:26px;height:1px;background:var(--line)}
+  .nudge{
+    font-family:var(--serif);font-style:italic;font-weight:500;
+    font-size:19.5px;line-height:1.45;color:var(--ink-dim);
+    max-width:26ch;
+  }
+
+  /* expired view */
+  .x-title{
+    font-family:var(--serif);font-weight:600;
+    font-size:clamp(30px,8.6vw,38px);line-height:1.18;color:var(--ink);
+    margin-bottom:16px;text-wrap:balance;
+  }
+  .x-sub{
+    font-size:15px;line-height:1.65;color:var(--ink-dim);
+    max-width:34ch;margin:0 auto 34px;
+  }
+  .cta{
+    display:inline-block;
+    padding:15px 30px;border-radius:999px;
+    border:1px solid var(--gold);
+    color:var(--gold-2);text-decoration:none;
+    font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+    transition:background .2s ease,color .2s ease,box-shadow .2s ease;
+  }
+  .cta:hover,.cta:focus-visible{
+    background:var(--gold);color:#1c1207;
+    box-shadow:0 10px 34px rgba(184,150,78,.3);
+    outline:none;
+  }
+  .x-under{margin-top:18px;font-size:12.5px;color:var(--ink-faint);letter-spacing:.03em}
+
+  /* footer */
+  .foot{
+    margin-top:56px;
+    font-size:11.5px;letter-spacing:.03em;color:var(--ink-faint);
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
+  }
+  @media (min-width:700px){
+    .shell{padding-top:64px}
+    .mark{margin-bottom:56px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="mark">
+    <div class="monogram" aria-hidden="true">CJ</div>
+    <div class="wordmark">Christine Jewell</div>
+  </header>
+
+  <main>
+    <!-- player state -->
+    <section id="view-player" hidden>
+      <p class="eyebrow"><span class="rule"></span><span id="eyebrow-text">Day 1 of 7</span><span class="rule"></span></p>
+      <h1 class="title" id="episode-title">Today's Track</h1>
+      <div class="daydots" id="daydots" aria-hidden="true"></div>
+
+      <button id="play-btn" class="play" aria-label="Play" disabled>
+        <svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 5.06c0-.98 1.06-1.58 1.9-1.1l11.1 6.4c.84.49.84 1.7 0 2.18l-11.1 6.4c-.84.49-1.9-.12-1.9-1.09V5.06z" transform="translate(-1.5 0)"/></svg>
+        <svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1.3"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.3"/></svg>
+      </button>
+
+      <div class="scrub-wrap">
+        <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Seek within the track" disabled>
+        <div class="times"><span id="t-elapsed">0:00</span><span id="t-total">--:--</span></div>
+        <p class="audio-note" id="audio-note" hidden>The audio would not load. Check your signal and tap play to try again.</p>
+      </div>
+
+      <div class="note">
+        <span class="note-rule"></span>
+        <p class="nudge">Want to tell me what landed? Just reply to my text.</p>
+      </div>
+    </section>
+
+    <!-- expired state -->
+    <section id="view-expired" hidden>
+      <p class="eyebrow"><span class="rule"></span><span>The Daily Audio Series</span><span class="rule"></span></p>
+      <h1 class="x-title">This link has expired.</h1>
+      <p class="x-sub">Each day's track opens from its own personal link, and this one has finished its run. The series itself is still open to you.</p>
+      <a class="cta" id="optin-cta" href="https://go.thechristinejewell.com">Get the seven day series</a>
+      <p class="x-under">One short track a day, free, right here by text.</p>
+    </section>
+  </main>
+
+  <footer class="foot">Reply STOP to my texts anytime to opt out.</footer>
+</div>
+
+<audio id="audio" preload="metadata"></audio>
+<noscript><style>.shell{display:none}</style>This page needs JavaScript to play audio.</noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- demo shim (only when no server-injected config) ---------- */
+  var params = new URLSearchParams(location.search);
+  if (!window.CJ && params.get("demo") === "1") window.CJ = demoConfig();
+
+  var CJ = window.CJ;
+
+  var viewPlayer  = document.getElementById("view-player");
+  var viewExpired = document.getElementById("view-expired");
+
+  if (!CJ || CJ.expired || !CJ.audioUrl || !CJ.token) {
+    if (CJ && CJ.optInUrl) document.getElementById("optin-cta").href = CJ.optInUrl;
+    viewExpired.hidden = false;
+    return;
+  }
+
+  /* ---------- elements ---------- */
+  var audio    = document.getElementById("audio");
+  var btn      = document.getElementById("play-btn");
+  var scrub    = document.getElementById("scrub");
+  var elapsedEl= document.getElementById("t-elapsed");
+  var totalEl  = document.getElementById("t-total");
+  var noteEl   = document.getElementById("audio-note");
+
+  var totalDays = CJ.totalDays || 7;
+  var day       = Math.min(Math.max(CJ.day || 1, 1), totalDays);
+
+  document.getElementById("eyebrow-text").textContent = "Day " + day + " of " + totalDays;
+  document.getElementById("episode-title").textContent = CJ.episodeTitle || "Today's Track";
+  document.title = "Day " + day + " · Christine Jewell";
+
+  var dots = document.getElementById("daydots");
+  for (var i = 1; i <= totalDays; i++) {
+    var d = document.createElement("i");
+    if (i < day) d.className = "done";
+    else if (i === day) d.className = "now";
+    dots.appendChild(d);
+  }
+  viewPlayer.hidden = false;
+
+  /* ---------- telemetry ---------- */
+  var ENDPOINT = "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/api/listen-event";
+  var sent = {};
+  var started = false;
+
+  function beacon(event, positionSeconds) {
+    if (event !== "pagehide") {
+      if (sent[event]) return;
+      sent[event] = true;
+    }
+    var payload = JSON.stringify({
+      token: CJ.token,
+      event: event,
+      position_seconds: Math.max(0, Math.round(positionSeconds || 0))
+    });
+    if (CJ.demo) { try { console.log("[listen-event]", payload); } catch (e) {} return; }
+    try {
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true
+      }).catch(function () {});
+    } catch (e) {}
+  }
+
+  window.addEventListener("pagehide", function () {
+    if (!started) return;
+    var payload = JSON.stringify({
+      token: CJ.token,
+      event: "pagehide",
+      position_seconds: Math.max(0, Math.round(audio.currentTime || 0))
+    });
+    if (CJ.demo) { try { console.log("[listen-event]", payload); } catch (e) {} return; }
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(ENDPOINT, new Blob([payload], { type: "application/json" }));
+    } else {
+      try {
+        fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, keepalive: true });
+      } catch (e) {}
+    }
+  });
+
+  /* ---------- playback ---------- */
+  var scrubbing = false;
+  var hadError  = false;
+
+  audio.src = CJ.audioUrl;
+
+  function fmt(t) {
+    if (!isFinite(t) || t < 0) return "--:--";
+    t = Math.floor(t);
+    var h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+    var ss = (s < 10 ? "0" : "") + s;
+    if (h > 0) return h + ":" + (m < 10 ? "0" : "") + m + ":" + ss;
+    return m + ":" + ss;
+  }
+
+  function durationKnown() { return isFinite(audio.duration) && audio.duration > 0; }
+
+  function paint() {
+    var dur = durationKnown() ? audio.duration : 0;
+    if (!scrubbing) {
+      elapsedEl.textContent = fmt(audio.currentTime);
+      if (dur) {
+        var v = Math.round((audio.currentTime / dur) * 1000);
+        scrub.value = v;
+        scrub.style.setProperty("--p", (v / 10) + "%");
+      }
+    }
+  }
+
+  audio.addEventListener("loadedmetadata", function () {
+    totalEl.textContent = fmt(audio.duration);
+    scrub.disabled = false;
+    btn.disabled = false;
+    paint();
+  });
+  /* some CDNs only reveal duration late */
+  audio.addEventListener("durationchange", function () {
+    if (durationKnown()) totalEl.textContent = fmt(audio.duration);
+  });
+  audio.addEventListener("canplay", function () {
+    btn.disabled = false;
+    btn.classList.remove("loading");
+    noteEl.hidden = true;
+    hadError = false;
+  });
+
+  btn.addEventListener("click", function () {
+    if (hadError) { audio.load(); hadError = false; noteEl.hidden = true; }
+    if (audio.paused) {
+      if (audio.ended) audio.currentTime = 0;
+      var p = audio.play();
+      if (p && p.catch) p.catch(function () { showError(); });
+    } else {
+      audio.pause();
+    }
+  });
+
+  audio.addEventListener("play", function () {
+    btn.classList.add("playing");
+    btn.setAttribute("aria-label", "Pause");
+    if (!started) { started = true; beacon("play", audio.currentTime); }
+  });
+  audio.addEventListener("pause", function () {
+    btn.classList.remove("playing", "loading");
+    btn.setAttribute("aria-label", "Play");
+  });
+  audio.addEventListener("waiting", function () { btn.classList.add("loading"); });
+  audio.addEventListener("playing", function () { btn.classList.remove("loading"); });
+
+  audio.addEventListener("timeupdate", function () {
+    paint();
+    if (!durationKnown()) return;
+    var pct = audio.currentTime / audio.duration;
+    if (pct >= 0.25) beacon("pct25", audio.currentTime);
+    if (pct >= 0.50) beacon("pct50", audio.currentTime);
+    if (pct >= 0.75) beacon("pct75", audio.currentTime);
+  });
+
+  audio.addEventListener("ended", function () {
+    beacon("complete", audio.duration);
+    btn.classList.remove("playing");
+    btn.setAttribute("aria-label", "Play again");
+  });
+
+  function showError() {
+    hadError = true;
+    btn.classList.remove("playing", "loading");
+    btn.disabled = false;
+    noteEl.hidden = false;
+  }
+  audio.addEventListener("error", showError);
+
+  /* scrubber: preview on input, seek on release */
+  scrub.addEventListener("input", function () {
+    scrubbing = true;
+    if (!durationKnown()) return;
+    var t = (scrub.value / 1000) * audio.duration;
+    elapsedEl.textContent = fmt(t);
+    scrub.style.setProperty("--p", (scrub.value / 10) + "%");
+  });
+  scrub.addEventListener("change", function () {
+    if (durationKnown()) audio.currentTime = (scrub.value / 1000) * audio.duration;
+    scrubbing = false;
+    paint();
+  });
+
+  /* lock screen and control center metadata */
+  if ("mediaSession" in navigator) {
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: CJ.episodeTitle || "Daily Audio",
+        artist: "Christine Jewell",
+        album: "Day " + day + " of " + totalDays
+      });
+      navigator.mediaSession.setActionHandler("play", function () { btn.click(); });
+      navigator.mediaSession.setActionHandler("pause", function () { audio.pause(); });
+      navigator.mediaSession.setActionHandler("seekto", function (e) {
+        if (e.seekTime != null && durationKnown()) audio.currentTime = e.seekTime;
+      });
+    } catch (e) {}
+  }
+
+  /* ---------- demo audio: a short warm tone, generated locally ---------- */
+  function demoConfig() {
+    var sr = 8000, secs = 75, n = sr * secs;
+    var buf = new ArrayBuffer(44 + n * 2);
+    var v = new DataView(buf);
+    function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
+    str(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); str(8, "WAVE");
+    str(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    str(36, "data"); v.setUint32(40, n * 2, true);
+    for (var i = 0; i < n; i++) {
+      var t = i / sr;
+      var env = 0.14 * (0.62 + 0.38 * Math.sin(t * 0.45));
+      var s = env * (Math.sin(6.2832 * 196 * t) * 0.5 + Math.sin(6.2832 * 294 * t) * 0.3 + Math.sin(6.2832 * 392 * t) * 0.2);
+      v.setInt16(44 + i * 2, s * 32767, true);
+    }
+    return {
+      episodeTitle: "The Roommate Drift",
+      day: 3,
+      totalDays: 7,
+      token: "demo",
+      demo: true,
+      audioUrl: URL.createObjectURL(new Blob([buf], { type: "audio/wav" }))
+    };
+  }
+})();
+</script>
+</body>
+</html>
