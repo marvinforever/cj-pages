@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Daily Whisper: her board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#eceef2; --surface:#fff; --surface-2:#f5f7fa; --sunk:#e4e8ee;
+  --ink:#171a21; --ink-soft:#414957; --muted:#6b7383;
+  --rule:#d9dde5; --rule-soft:#e8ebf1;
+  --brass:#9a7a34; --brass-bright:#b8964e; --brass-wash:#f7f1e3;
+  --alarm:#a33b2c; --alarm-wash:#fbeae7;
+  --go:#2f6b4f; --go-wash:#e8f2ec;
+  --his:#e9edf3; --hers:#f3ead6;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0f1218; --surface:#181c24; --surface-2:#1e232c; --sunk:#13161d;
+  --ink:#e8ebf1; --ink-soft:#b4bbc9; --muted:#8a92a3;
+  --rule:#2a303b; --rule-soft:#222732;
+  --brass:#d9b978; --brass-bright:#e7cb90; --brass-wash:#2a2417;
+  --alarm:#e08a7d; --alarm-wash:#2e1b18;
+  --go:#7dc4a0; --go-wash:#16241d;
+  --his:#232833; --hers:#2c2718;
+}}
+:root[data-theme="dark"]{
+  --ground:#0f1218; --surface:#181c24; --surface-2:#1e232c; --sunk:#13161d;
+  --ink:#e8ebf1; --ink-soft:#b4bbc9; --muted:#8a92a3;
+  --rule:#2a303b; --rule-soft:#222732;
+  --brass:#d9b978; --brass-bright:#e7cb90; --brass-wash:#2a2417;
+  --alarm:#e08a7d; --alarm-wash:#2e1b18;
+  --go:#7dc4a0; --go-wash:#16241d;
+  --his:#232833; --hers:#2c2718;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:Karla,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15.5px;line-height:1.5}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+
+.shell{display:grid;grid-template-rows:auto 1fr;height:100vh;max-width:1240px;margin:0 auto}
+header.bar{display:flex;align-items:baseline;gap:14px;padding:16px 20px 12px;border-bottom:1px solid var(--rule)}
+header.bar h1{font-size:22px;font-weight:600}
+header.bar .sub{font-size:13.5px;color:var(--muted)}
+header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--go);margin-right:6px}
+
+.cols{display:grid;grid-template-columns:340px 1fr;min-height:0}
+@media (max-width:820px){.cols{grid-template-columns:1fr}
+  .cols.viewing .list{display:none} .cols:not(.viewing) .pane{display:none}}
+
+.list{border-right:1px solid var(--rule);overflow-y:auto;background:var(--surface-2)}
+.filters{display:flex;gap:6px;padding:10px 12px;position:sticky;top:0;background:var(--surface-2);
+  border-bottom:1px solid var(--rule-soft);z-index:2}
+.fbtn{flex:none;background:none;border:1px solid transparent;border-radius:99px;padding:5px 12px;
+  font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.fbtn[aria-pressed="true"]{background:var(--brass-wash);color:var(--brass);border-color:var(--brass-bright)}
+.row{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--rule-soft);
+  padding:13px 15px;cursor:pointer;font:inherit;color:inherit}
+.row:hover{background:var(--surface)}
+.row[aria-current="true"]{background:var(--surface);box-shadow:inset 3px 0 0 var(--brass-bright)}
+.row.test{opacity:.5}
+.rtop{display:flex;align-items:baseline;gap:8px}
+.rname{font-family:Fraunces,Georgia,serif;font-size:16.5px;font-weight:600}
+.rday{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.rwhen{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.rprev{font-size:13.5px;color:var(--ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rprev b{color:var(--muted);font-weight:600}
+.rtags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.tag{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:99px;background:var(--sunk);color:var(--muted)}
+.tag.you{background:var(--alarm-wash);color:var(--alarm);font-weight:700}
+.tag.build{background:var(--brass-bright);color:#fff;font-weight:700}
+.tag.crisis{background:var(--alarm);color:#fff;font-weight:700}
+
+.pane{display:flex;flex-direction:column;min-height:0;background:var(--surface)}
+.phead{padding:14px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:12px}
+.back{display:none;background:none;border:none;font:inherit;color:var(--brass);font-weight:600;cursor:pointer;padding:0}
+@media (max-width:820px){.back{display:block}}
+.phead h2{font-size:19px;font-weight:600}
+.phead .meta{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);margin-left:auto;text-align:right}
+.msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:3px}
+.m{max-width:78%;padding:11px 14px;font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.m.in{background:var(--his);border-radius:16px 16px 16px 4px;align-self:flex-start}
+.m.out{background:var(--hers);border-radius:16px 16px 4px 16px;align-self:flex-end}
+.who{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin:10px 0 2px}
+.who.out{align-self:flex-end}
+.who.hand{color:var(--brass);font-weight:600}
+.empty{margin:auto;color:var(--muted);text-align:center;padding:40px;max-width:34ch}
+.composer{border-top:1px solid var(--rule);padding:14px 20px 18px;background:var(--surface-2)}
+.composer textarea{width:100%;min-height:76px;padding:11px 13px;border:1px solid var(--rule);border-radius:10px;
+  font:inherit;font-size:15px;background:var(--surface);color:var(--ink);resize:vertical}
+.composer textarea:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:var(--brass)}
+.crow{display:flex;align-items:center;gap:12px;margin-top:9px}
+.send{background:var(--brass-bright);color:#fff;border:none;border-radius:9px;padding:9px 20px;
+  font:inherit;font-size:14.5px;font-weight:700;cursor:pointer}
+.send:hover{background:var(--brass)} .send:disabled{opacity:.45;cursor:default}
+.hint{font-size:12.5px;color:var(--muted)} .count{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted)}
+.count.over{color:var(--alarm);font-weight:700}
+.flash{margin-top:9px;font-size:14px;font-weight:600}
+.flash.ok{color:var(--go)} .flash.bad{color:var(--alarm)}
+</style></head><body>
+<div class="shell">
+  <header class="bar">
+    <h1>Her board</h1>
+    <span class="sub">every text, both directions</span>
+    <span class="live" id="live"><span class="dot"></span>loading</span>
+  </header>
+  <div class="cols" id="cols">
+    <div class="list">
+      <div class="filters">
+        <button class="fbtn" id="f-all" aria-pressed="true">Everyone</button>
+        <button class="fbtn" id="f-you" aria-pressed="false">Needs you</button>
+      </div>
+      <div id="rows"></div>
+    </div>
+    <div class="pane">
+      <div class="phead" id="phead"><button class="back" id="back">Back</button><h2 id="pname">Pick someone</h2><span class="meta" id="pmeta"></span></div>
+      <div class="msgs" id="msgs"><div class="empty">Choose a name on the left to read the whole conversation.</div></div>
+      <div class="composer" id="composer" hidden>
+        <textarea id="reply" placeholder="Write to him yourself. It goes out from your number, exactly as you type it." maxlength="700"></textarea>
+        <div class="crow">
+          <button class="send" id="send" disabled>Send</button>
+          <span class="hint">He gets this from you. The assistant stays quiet on this thread for a day.</span>
+          <span class="count" id="count">0 / 600</span>
+        </div>
+        <div id="flash"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var key=new URLSearchParams(location.search).get("key")||"";
+var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
+var current=null, threads=[], filterYou=false, typing=false;
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function when(iso){var d=new Date(iso),diff=(Date.now()-d)/60000;
+  if(diff<1)return"just now"; if(diff<60)return Math.round(diff)+"m";
+  if(diff<1440)return Math.round(diff/60)+"h";
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+function stamp(iso){var d=new Date(iso);
+  return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})+" "+
+         d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}
+var VOICE={drip:"sent by the series",welcome:"sent by the series",invite:"sent by the series",
+  build_reply:"her calendar, sent automatically",done_reply:"sent by the series",
+  invite_nudge:"sent by the series",identity:"the approved answer",help:"carrier reply",
+  stop_confirm:"opt-out confirmation",crisis_ack:"the crisis message",
+  conversational:"written by the assistant",invitation:"written by the assistant",
+  human:"written by you",stalled_nudge:"written by the assistant"};
+function renderRows(){
+  var el=document.getElementById("rows");
+  var list=threads.filter(function(t){return !filterYou||t.needs_her});
+  if(!list.length){el.innerHTML='<div class="empty">Nothing here yet.</div>';return}
+  el.innerHTML=list.map(function(t){
+    var tags=[];
+    if(t.crisis)tags.push('<span class="tag crisis">crisis</span>');
+    else if(t.needs_her)tags.push('<span class="tag you">needs you</span>');
+    if(t.built)tags.push('<span class="tag build">BUILD</span>');
+    if(!t.consented)tags.push('<span class="tag">not started</span>');
+    if(t.dones)tags.push('<span class="tag">'+t.dones+' done</span>');
+    if(t.score_open!=null)tags.push('<span class="tag">'+t.score_open+(t.score_close!=null?" to "+t.score_close:"")+'</span>');
+    if(t.test)tags.push('<span class="tag">test</span>');
+    return '<button class="row'+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
+      '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
+      '<span class="rday">day '+esc(t.day)+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
+      '<div class="rprev">'+(t.last_dir==="outbound"?"<b>her: </b>":"")+esc((t.last_body||"").slice(0,90))+'</div>'+
+      (tags.length?'<div class="rtags">'+tags.join("")+'</div>':'')+'</button>'}).join("")}
+function loadList(){
+  fetch(API+"api/feed?key="+encodeURIComponent(key)).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok){document.getElementById("live").textContent=j.error||"could not load";return}
+    threads=j.threads;renderRows();
+    var n=threads.filter(function(t){return t.needs_her}).length;
+    document.getElementById("live").innerHTML='<span class="dot"></span>'+threads.length+' in the series'+(n?' &middot; '+n+' need you':'');
+  }).catch(function(){document.getElementById("live").textContent="offline"})}
+function loadThread(id){
+  current=id;renderRows();
+  document.getElementById("cols").classList.add("viewing");
+  fetch(API+"api/thread?key="+encodeURIComponent(key)+"&lead_id="+encodeURIComponent(id))
+   .then(function(r){return r.json()}).then(function(j){
+    if(!j.ok){return}
+    var t=j.thread;
+    document.getElementById("pname").textContent=t.name;
+    var bits=["day "+t.day, t.phone_masked];
+    if(t.score_open!=null)bits.push("opened at "+t.score_open+(t.score_close!=null?", closed at "+t.score_close:""));
+    if(t.built)bits.push("said BUILD");
+    document.getElementById("pmeta").textContent=bits.join(" · ");
+    var last="";
+    document.getElementById("msgs").innerHTML=t.messages.map(function(m){
+      var label=m.dir==="in"?"him":(VOICE[m.kind]||"sent under her name");
+      var head="";
+      if(label!==last){head='<div class="who '+(m.dir==="in"?"in":"out")+(m.kind==="human"?" hand":"")+'">'+esc(label)+'</div>';last=label}
+      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'}).join("");
+    var mb=document.getElementById("msgs");mb.scrollTop=mb.scrollHeight;
+    document.getElementById("composer").hidden=false;
+    document.getElementById("flash").textContent="";
+  })}
+document.getElementById("rows").addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest(".row"):null; if(b)loadThread(b.getAttribute("data-id"))});
+document.getElementById("back").addEventListener("click",function(){
+  document.getElementById("cols").classList.remove("viewing")});
+document.getElementById("f-all").addEventListener("click",function(){filterYou=false;
+  this.setAttribute("aria-pressed","true");document.getElementById("f-you").setAttribute("aria-pressed","false");renderRows()});
+document.getElementById("f-you").addEventListener("click",function(){filterYou=true;
+  this.setAttribute("aria-pressed","true");document.getElementById("f-all").setAttribute("aria-pressed","false");renderRows()});
+var ta=document.getElementById("reply"),send=document.getElementById("send");
+ta.addEventListener("input",function(){var n=this.value.trim().length;typing=n>0;
+  var c=document.getElementById("count");c.textContent=n+" / 600";c.className="count"+(n>600?" over":"");
+  send.disabled=(n===0||n>600)});
+send.addEventListener("click",function(){
+  var text=ta.value.trim(); if(!text||!current)return;
+  send.disabled=true;send.textContent="Sending...";
+  fetch(API+"api/feed-reply?key="+encodeURIComponent(key),{method:"POST",
+    headers:{"Content-Type":"application/json"},body:JSON.stringify({lead_id:current,text:text})})
+   .then(function(r){return r.json()}).then(function(j){
+    var f=document.getElementById("flash");
+    send.textContent="Send";
+    if(j&&j.ok){ta.value="";typing=false;send.disabled=true;
+      document.getElementById("count").textContent="0 / 600";
+      f.className="flash ok";f.textContent="Sent.";loadThread(current);loadList()}
+    else{send.disabled=false;f.className="flash bad";f.textContent=(j&&j.error)||"That did not send. Nothing went out."}
+   }).catch(function(){send.disabled=false;send.textContent="Send";
+    var f=document.getElementById("flash");f.className="flash bad";f.textContent="That did not send. Nothing went out."})});
+loadList();
+setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current);} },20000);
+</script></body></html>
