@@ -320,6 +320,11 @@ var men=[], fq="", fstatus="all", numbersLoaded=false;
 function fmtInt(n){return (n==null||isNaN(n))?"0":Number(n).toLocaleString("en-US")}
 function tShort(iso){var d=new Date(iso);return d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}
 function card(lbl,big,sub,extra){return '<div class="card'+(extra||"")+'"><div class="lbl">'+lbl+'</div><div class="big">'+big+'</div><div class="sub">'+sub+'</div></div>'}
+function replyBars(rows){
+  return rows.map(function(r){
+    var none=r.pct==null, h=none?3:Math.max(3,Math.round(r.pct/100*54));
+    return '<div class="col'+(none?" zero":"")+'" title="Morning '+r.day+': '+(none?'not reached yet':r.replied+' of '+r.delivered+' replied')+'">'+
+      '<span class="v">'+(none?'\u2013':r.pct+'%')+'</span><span class="bar" style="height:'+h+'px"></span><span class="x">'+r.day+'</span></div>'}).join("")}
 function renderCohort(c){
   var conv=(c.booked||0)+(c.enrolled||0);
   var dist=c.day_distribution||[], max=Math.max.apply(null,dist.concat([1])), bars="";
@@ -332,13 +337,15 @@ function renderCohort(c){
     card("Invited, waiting",fmtInt(c.waiting_on_yes),"first text sent, no yes back yet")+
     card("Came in this week",fmtInt(c.optins&&c.optins.week),fmtInt(c.optins&&c.optins.total)+" men in the funnel all told")+
     card("Listen-through",fmtInt(c.avg_listen_through_pct)+'<span class="unit">%</span>',"average across every morning delivered")+
-    card("Reply rate",fmtInt(c.reply_rate_pct)+'<span class="unit">%</span>',"of the men in the series have written back")+
+    card("Reply rate",fmtInt(c.reply_rate_pct)+'<span class="unit">%</span>',fmtInt(c.mornings_replied)+" of "+fmtInt(c.mornings_delivered)+" mornings delivered got a reply that day")+
     card("Booked",fmtInt(c.booked),"calls on the calendar")+
     card("Enrolled",fmtInt(c.enrolled),"in the program")+
     card("Completed",fmtInt(c.completed),"finished all ten mornings")+
     card("Conversion",fmtInt(c.conversion_pct)+'<span class="unit">%</span>',fmtInt(conv)+" of "+fmtInt(c.completed)+" who finished booked or enrolled")+
     '<div class="card wide"><div class="lbl">Where everyone is</div><div class="bars">'+bars+'</div>'+
-    '<div class="sub">men in the series by which morning they are on. 0 means he said yes and his first morning has not come yet. Test lines are not counted anywhere on this page.</div></div>';
+    '<div class="sub">men in the series by which morning they are on. 0 means he said yes and his first morning has not come yet. Test lines are not counted anywhere on this page.</div></div>'+
+    '<div class="card wide"><div class="lbl">Reply rate by morning</div><div class="bars">'+replyBars(c.reply_by_day||[])+'</div>'+
+    '<div class="sub">of the men who received each morning, the share who replied that day. A grey bar means nobody has reached that morning yet. This curve is the one to watch as the cohort grows.</div></div>';
   document.getElementById("refreshed").textContent="refreshed "+tShort(c.generated_at||new Date().toISOString());
 }
 function renderChips(){
