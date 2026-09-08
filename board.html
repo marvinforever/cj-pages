@@ -159,6 +159,28 @@ td.msg i{color:var(--muted)}
 .chip.crisis-flag{background:var(--alarm);color:#fff}
 .chip.re-engage{background:var(--sunk);color:var(--ink-soft)}
 .tempty{padding:28px;text-align:center;color:var(--muted)}
+
+/* recordings */
+.drop{border:2px dashed var(--rule);border-radius:12px;padding:26px 20px;text-align:center;background:var(--surface);
+  color:var(--ink-soft);cursor:pointer;transition:.15s}
+.drop.over{border-color:var(--brass);background:var(--brass-wash)}
+.drop b{display:block;font-family:Fraunces,Georgia,serif;font-size:18px;color:var(--ink);margin-bottom:4px}
+.drop small{display:block;font-size:12.5px;color:var(--muted);margin-top:6px}
+.drop input{display:none}
+.rlist{display:grid;gap:8px;margin-top:14px}
+.rec{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
+.rec .dn{font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:700;color:var(--brass);line-height:1;text-align:center}
+.rec .rt{font-family:Fraunces,Georgia,serif;font-size:16px;font-weight:600}
+.rec .rm{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-top:3px}
+.rec .rm.missing{color:var(--alarm)}
+.rec audio{height:32px;max-width:260px}
+.rec.missing{border-style:dashed;opacity:.8}
+.uplog{margin-top:12px;font-size:14px}
+.uplog .ok{color:var(--go);font-weight:600} .uplog .bad{color:var(--alarm);font-weight:600} .uplog .warn{color:var(--brass);font-weight:600}
+.daypick{display:none;margin-top:10px;align-items:center;gap:10px;font-size:14px}
+.daypick.show{display:flex}
+.daypick select{font:inherit;padding:6px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--ink)}
+@media (max-width:640px){.rec{grid-template-columns:36px 1fr}.rec audio{grid-column:1/-1;max-width:100%;width:100%}}
 </style></head><body>
 <div class="shell">
   <header class="bar">
@@ -166,6 +188,7 @@ td.msg i{color:var(--muted)}
     <nav class="tabs" role="tablist" aria-label="Views">
       <button class="tab" role="tab" id="t-conv" aria-selected="true" aria-controls="cols">Conversations</button>
       <button class="tab" role="tab" id="t-num" aria-selected="false" aria-controls="numbers">Numbers</button>
+      <button class="tab" role="tab" id="t-rec" aria-selected="false" aria-controls="recordings">Recordings</button>
     </nav>
     <span class="live" id="live"><span class="dot"></span>loading</span>
   </header>
@@ -190,6 +213,28 @@ td.msg i{color:var(--muted)}
         <div id="flash"></div>
       </div>
     </div>
+  </div>
+  <div class="numbers" id="recordings" role="tabpanel" hidden>
+    <section class="sect">
+      <div class="shead"><h2>Drop a new take</h2><span class="snote">it goes live the moment it lands</span></div>
+      <label class="drop" id="drop">
+        <b>Drag a recording here, or tap to choose one</b>
+        Name it the way you already do, like <span class="mono">3. Are you ALL IN? Presence is Power.m4a</span>, and it files itself to that morning. Re-dropping a morning replaces it.
+        <small>m4a, mp3, or wav. Christine and Shep get a text when it lands.</small>
+        <input type="file" id="file" accept="audio/*,.m4a,.mp3,.wav,.mp4">
+      </label>
+      <div class="daypick" id="daypick">
+        <span>I could not tell which morning that is. Which one?</span>
+        <select id="daysel"></select>
+        <button class="send" id="daygo">Upload</button>
+        <button class="fbtn" id="daycancel">Cancel</button>
+      </div>
+      <div class="uplog" id="uplog"></div>
+    </section>
+    <section class="sect">
+      <div class="shead"><h2>The ten mornings</h2><span class="snote" id="recnote"></span></div>
+      <div class="rlist" id="rlist"><div class="tempty">Loading.</div></div>
+    </section>
   </div>
   <div class="numbers" id="numbers" role="tabpanel" hidden>
     <section class="sect">
@@ -386,21 +431,71 @@ document.getElementById("tbody").addEventListener("click",function(e){
   var r=e.target.closest?e.target.closest(".lrow"):null; if(!r)return;
   showTab("conv");loadThread(r.getAttribute("data-id"))});
 
+/* ---------------- the Recordings tab ---------------- */
+var recLoaded=false, pendingFile=null;
+function mmss(sec){if(!sec)return"";var m=Math.floor(sec/60),s=Math.round(sec%60);return m+":"+(s<10?"0":"")+s}
+function loadRecordings(){
+  fetch(API+"api/episodes?key="+encodeURIComponent(key)).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok){document.getElementById("rlist").innerHTML='<div class="tempty">Could not load.</div>';return}
+    recLoaded=true;
+    var eps=j.episodes||[], have=eps.filter(function(e){return e.audio_url}).length;
+    document.getElementById("recnote").textContent=have+" of 10 loaded";
+    document.getElementById("rlist").innerHTML=eps.map(function(e){
+      var meta=e.audio_url
+        ?(mmss(e.duration_seconds)?mmss(e.duration_seconds)+" · ":"")+"replaced "+esc(when(e.replaced_at))+(e.has_transcript?"":" · transcript on its way")
+        :"no recording yet";
+      return '<div class="rec'+(e.audio_url?"":" missing")+'"><div class="dn">'+e.day+'</div>'+
+        '<div><div class="rt">'+esc(e.title||e.planned_title||"Morning "+e.day)+'</div><div class="rm'+(e.audio_url?"":" missing")+'">'+meta+'</div></div>'+
+        (e.audio_url?'<audio controls preload="none" src="'+esc(e.audio_url)+'"></audio>':'<span></span>')+'</div>'}).join("");
+  }).catch(function(){document.getElementById("rlist").innerHTML='<div class="tempty">Could not load.</div>'})}
+function uplog(cls,msg){var el=document.getElementById("uplog");el.innerHTML='<span class="'+cls+'">'+esc(msg)+'</span>'}
+function looksNamed(name){return /^\s*(\d{1,2}\s*[.)\-:]|[A-Ca-c]\s*\d{1,2}\s*[-.:]|day\s*\d{1,2})/i.test(name)}
+function doUpload(file,day){
+  var fd=new FormData();fd.append("file",file,file.name);if(day)fd.append("day",String(day));
+  uplog("","Uploading "+file.name+"...");
+  fetch(API+"api/episode-upload?key="+encodeURIComponent(key),{method:"POST",body:fd})
+   .then(function(r){return r.json()}).then(function(j){
+    if(j&&j.ok){uplog(j.warning?"warn":"ok","Morning "+j.day+" is live: \u201c"+j.title+"\u201d."+(j.warning?" "+j.warning:""));loadRecordings()}
+    else uplog("bad",(j&&j.error)||"That did not upload. Nothing changed.")
+   }).catch(function(){uplog("bad","That did not upload. Nothing changed.")});
+  document.getElementById("daypick").classList.remove("show");pendingFile=null}
+function takeFile(file){
+  if(!file)return;
+  if(looksNamed(file.name)){doUpload(file);return}
+  pendingFile=file;
+  var sel=document.getElementById("daysel");sel.innerHTML="";
+  for(var d=1;d<=10;d++){var o=document.createElement("option");o.value=d;o.textContent="Morning "+d;sel.appendChild(o)}
+  uplog("",'"'+file.name+'" does not start with a morning number.');
+  document.getElementById("daypick").classList.add("show")}
+(function(){
+  var drop=document.getElementById("drop"),inp=document.getElementById("file");
+  ["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over")})});
+  ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over")})});
+  drop.addEventListener("drop",function(e){takeFile(e.dataTransfer.files[0])});
+  inp.addEventListener("change",function(){takeFile(this.files[0]);this.value=""});
+  document.getElementById("daygo").addEventListener("click",function(){if(pendingFile)doUpload(pendingFile,Number(document.getElementById("daysel").value))});
+  document.getElementById("daycancel").addEventListener("click",function(){pendingFile=null;document.getElementById("daypick").classList.remove("show");uplog("","")});
+})();
+
 /* ---------------- tabs ---------------- */
+var TABS={conv:{el:"cols",btn:"t-conv",hash:""},num:{el:"numbers",btn:"t-num",hash:"#numbers"},rec:{el:"recordings",btn:"t-rec",hash:"#recordings"}};
 function showTab(which){
-  var conv=which==="conv";
-  document.getElementById("cols").hidden=!conv;
-  document.getElementById("numbers").hidden=conv;
-  document.getElementById("t-conv").setAttribute("aria-selected",String(conv));
-  document.getElementById("t-num").setAttribute("aria-selected",String(!conv));
-  if(!conv){ if(!numbersLoaded)loadNumbers(); if(location.hash!=="#numbers")history.replaceState(null,"","#numbers") }
+  Object.keys(TABS).forEach(function(k){
+    document.getElementById(TABS[k].el).hidden=(k!==which);
+    document.getElementById(TABS[k].btn).setAttribute("aria-selected",String(k===which))});
+  if(which==="num"&&!numbersLoaded)loadNumbers();
+  if(which==="rec"&&!recLoaded)loadRecordings();
+  var h=TABS[which].hash;
+  if(h){ if(location.hash!==h)history.replaceState(null,"",h) }
   else if(location.hash){ history.replaceState(null,"",location.pathname+location.search) }
 }
+function tabFromHash(){return location.hash==="#numbers"?"num":location.hash==="#recordings"?"rec":"conv"}
 document.getElementById("t-conv").addEventListener("click",function(){showTab("conv")});
 document.getElementById("t-num").addEventListener("click",function(){showTab("num")});
-window.addEventListener("hashchange",function(){showTab(location.hash==="#numbers"?"num":"conv")});
+document.getElementById("t-rec").addEventListener("click",function(){showTab("rec")});
+window.addEventListener("hashchange",function(){showTab(tabFromHash())});
 
 loadList();
-showTab(location.hash==="#numbers"?"num":"conv");
+showTab(tabFromHash());
 setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current); if(numbersLoaded&&!document.getElementById("numbers").hidden)loadNumbers();} },20000);
 </script></body></html>
