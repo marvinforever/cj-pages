@@ -249,7 +249,7 @@ function renderRows(){
     return '<button class="row'+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
       '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
       '<span class="rday">'+(t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
-      '<div class="rprev">'+(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under her name")+": </b>":"<b>him: </b>")+esc((t.last_body||"").slice(0,90))+'</div>'+
+      '<div class="rprev">'+(t.pending_invite?'<i style="color:var(--muted)">first text goes out at 7:30 his time</i>':(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under her name")+": </b>":"<b>him: </b>")+esc((t.last_body||"").slice(0,90)))+'</div>'+
       (tags.length?'<div class="rtags">'+tags.join("")+'</div>':'')+'</button>'}).join("")}
 function loadList(){
   fetch(API+"api/feed?key="+encodeURIComponent(key)+(showTests?"&tests=1":"")).then(function(r){return r.json()}).then(function(j){
