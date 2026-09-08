@@ -130,7 +130,10 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
   </div>
 </div>
 <script>
-var key=new URLSearchParams(location.search).get("key")||"";
+var qs=new URLSearchParams(location.search);
+var key=qs.get("key")||"";
+// Our own +1555 lines are hidden by default. Add &tests=1 to the link to see them.
+var showTests=qs.get("tests")==="1";
 var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
 var current=null, threads=[], filterYou=false, typing=false;
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -141,6 +144,10 @@ function when(iso){var d=new Date(iso),diff=(Date.now()-d)/60000;
 function stamp(iso){var d=new Date(iso);
   return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})+" "+
          d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}
+var SHORT={drip:"series",welcome:"series",invite:"series",invite_nudge:"series",done_reply:"series",
+  build_reply:"her calendar",identity:"approved answer",help:"carrier",stop_confirm:"opt-out",
+  crisis_ack:"crisis message",conversational:"assistant",invitation:"assistant",
+  stalled_nudge:"assistant",human:"you"};
 var VOICE={drip:"sent by the series",welcome:"sent by the series",invite:"sent by the series",
   build_reply:"her calendar, sent automatically",done_reply:"sent by the series",
   invite_nudge:"sent by the series",identity:"the approved answer",help:"carrier reply",
@@ -156,21 +163,25 @@ function renderRows(){
     if(t.crisis)tags.push('<span class="tag crisis">crisis</span>');
     else if(t.needs_her)tags.push('<span class="tag you">needs you</span>');
     if(t.built)tags.push('<span class="tag build">BUILD</span>');
-    if(!t.consented)tags.push('<span class="tag">not started</span>');
     if(t.dones)tags.push('<span class="tag">'+t.dones+' done</span>');
     if(t.score_open!=null)tags.push('<span class="tag">'+t.score_open+(t.score_close!=null?" to "+t.score_close:"")+'</span>');
     if(t.test)tags.push('<span class="tag">test</span>');
     return '<button class="row'+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
       '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
-      '<span class="rday">day '+esc(t.day)+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
-      '<div class="rprev">'+(t.last_dir==="outbound"?"<b>her: </b>":"")+esc((t.last_body||"").slice(0,90))+'</div>'+
+      '<span class="rday">'+(t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
+      '<div class="rprev">'+(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under her name")+": </b>":"<b>him: </b>")+esc((t.last_body||"").slice(0,90))+'</div>'+
       (tags.length?'<div class="rtags">'+tags.join("")+'</div>':'')+'</button>'}).join("")}
 function loadList(){
-  fetch(API+"api/feed?key="+encodeURIComponent(key)).then(function(r){return r.json()}).then(function(j){
+  fetch(API+"api/feed?key="+encodeURIComponent(key)+(showTests?"&tests=1":"")).then(function(r){return r.json()}).then(function(j){
     if(!j.ok){document.getElementById("live").textContent=j.error||"could not load";return}
     threads=j.threads;renderRows();
     var n=threads.filter(function(t){return t.needs_her}).length;
-    document.getElementById("live").innerHTML='<span class="dot"></span>'+threads.length+' in the series'+(n?' &middot; '+n+' need you':'');
+    var inSeries=threads.filter(function(t){return t.consented}).length;
+    var waiting=threads.length-inSeries;
+    var bits=[inSeries+(inSeries===1?" man in the series":" men in the series")];
+    if(waiting)bits.push(waiting+(waiting===1?" invited, waiting":" invited, waiting"));
+    bits.push(n?n+" need you":"nobody waiting on you");
+    document.getElementById("live").innerHTML='<span class="dot"></span>'+bits.join(" &middot; ");
   }).catch(function(){document.getElementById("live").textContent="offline"})}
 function loadThread(id){
   current=id;renderRows();
@@ -180,7 +191,7 @@ function loadThread(id){
     if(!j.ok){return}
     var t=j.thread;
     document.getElementById("pname").textContent=t.name;
-    var bits=["day "+t.day, t.phone_masked];
+    var bits=[t.consented?"day "+t.day+" of 10":"invited, has not said yes", t.phone_masked];
     if(t.score_open!=null)bits.push("opened at "+t.score_open+(t.score_close!=null?", closed at "+t.score_close:""));
     if(t.built)bits.push("said BUILD");
     document.getElementById("pmeta").textContent=bits.join(" · ");

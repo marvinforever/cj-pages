@@ -19,11 +19,11 @@
     {
       "generated_at": "2026-08-29T15:38:00Z",
       "optins": { "total": 128, "week": 31 },          // week = last 7 days
-      "completed": 43,                                 // leads who finished day 7
+      "completed": 43,                                 // leads who finished morning 10
       "tracks": { "A": 61, "B": 39, "C": 21, "pending": 7 },
           // pending = welcomed but no A/B/C choice yet
-      "day_distribution": [7, 18, 15, 12, 11, 9, 7, 6],
-          // active leads by current day; index 0 = welcomed not started, 1..7 in series
+      "day_distribution": [7, 18, 15, 12, 11, 9, 7, 6, 5, 4, 3],
+          // men in the series by current morning; index 0 = said yes, no morning sent yet, 1..10
       "avg_listen_through_pct": 68,                    // mean max_progress_pct across deliveries
       "reply_rate_pct": 54,                            // share of leads with 1+ inbound reply
       "booked": 9,
@@ -38,8 +38,8 @@
           "lead_id": "6f9d2c1e-....",
           "name": "Marcus T.",
           "track": "A",                    // "A" | "B" | "C" | null (not chosen yet)
-          "day": 4,                        // 0..7
-          "total_days": 7,
+          "day": 4,                        // 0..10
+          "total_days": 10,
           "listen_through_pct": 82,        // mean max_progress_pct of their deliveries
           "replies_count": 6,              // total inbound messages
           "last_message": "That one about scorekeeping hit close.",
@@ -58,7 +58,7 @@
         "lead_id": "6f9d2c1e-....",
         "name": "Marcus T.",
         "phone_masked": "(***) ***-4821",
-        "track": "A", "day": 4, "total_days": 7,
+        "track": "A", "day": 4, "total_days": 10,
         "status": "engaged",
         "opted_in_at": "2026-08-25T13:02:00Z",
         "crisis_hold": false,              // true = automation paused, page shows a notice
@@ -498,8 +498,8 @@
 <div class="wrap" id="app">
   <section class="hero">
     <p class="eyebrow">Audio Concierge</p>
-    <h1>Seven days, one voice.</h1>
-    <p class="sub">Every listener in the daily audio series, how far they went, what they said back, and where each one stands today.</p>
+    <h1>Ten mornings, one voice.</h1>
+    <p class="sub">Every man in the Daily Whisper, how far he went, what he said back, and where he stands today. Our own test lines are not counted anywhere on this page.</p>
   </section>
 
   <section class="sect" id="sect-cohort" aria-labelledby="cohort-title">
@@ -641,18 +641,13 @@
   }
 
   function renderCohort(c) {
-    var tr = c.tracks || {};
-    var totTracks = (tr.A || 0) + (tr.B || 0) + (tr.C || 0) + (tr.pending || 0);
-    function w(n) { return totTracks ? (n / totTracks * 100) : 0; }
-    function pc(n) { return totTracks ? Math.round(n / totTracks * 100) + "%" : "0%"; }
-
     var dist = c.day_distribution || [];
     var max = Math.max.apply(null, dist.concat([1]));
     var distHtml = "";
     for (var i = 0; i < dist.length; i++) {
       var hgt = Math.max(3, Math.round(dist[i] / max * 54));
-      var lab = i === 0 ? "W" : String(i);
-      var ttl = i === 0 ? "Welcomed, track not chosen: " + dist[i] : "Day " + i + ": " + dist[i];
+      var lab = String(i);
+      var ttl = i === 0 ? "Said yes, first morning not sent yet: " + dist[i] : "Morning " + i + ": " + dist[i];
       distHtml +=
         '<div class="col' + (dist[i] === 0 ? " zero" : "") + '" title="' + esc(ttl) + '">' +
           '<span class="v num">' + fmtInt(dist[i]) + "</span>" +
@@ -666,17 +661,25 @@
     cohortBody.innerHTML =
       '<div class="cards">' +
 
-        '<div class="card"><div class="lbl">Opt-ins</div>' +
-          '<div class="big num">' + fmtInt(c.optins && c.optins.total) + "</div>" +
-          '<div class="sub num">+' + fmtInt(c.optins && c.optins.week) + " in the last 7 days</div></div>" +
+        '<div class="card"><div class="lbl">In the series</div>' +
+          '<div class="big num">' + fmtInt(c.in_series) + "</div>" +
+          '<div class="sub">said yes and are getting mornings</div></div>' +
+
+        '<div class="card"><div class="lbl">Invited, waiting</div>' +
+          '<div class="big num">' + fmtInt(c.waiting_on_yes) + "</div>" +
+          '<div class="sub">first text sent, no yes back yet</div></div>' +
+
+        '<div class="card"><div class="lbl">Came in this week</div>' +
+          '<div class="big num">' + fmtInt(c.optins && c.optins.week) + "</div>" +
+          '<div class="sub num">' + fmtInt(c.optins && c.optins.total) + " men in the funnel all told</div></div>" +
 
         '<div class="card"><div class="lbl">Listen-through</div>' +
           '<div class="big num">' + fmtPct(c.avg_listen_through_pct) + '<span class="unit">%</span></div>' +
-          '<div class="sub">average across every delivered track</div></div>' +
+          '<div class="sub">average across every morning actually delivered</div></div>' +
 
         '<div class="card"><div class="lbl">Reply rate</div>' +
           '<div class="big num">' + fmtPct(c.reply_rate_pct) + '<span class="unit">%</span></div>' +
-          '<div class="sub">have written back at least once</div></div>' +
+          '<div class="sub">of the men in the series, have written back</div></div>' +
 
         '<div class="card"><div class="lbl">Booked</div>' +
           '<div class="big num">' + fmtInt(c.booked) + "</div>" +
@@ -688,30 +691,16 @@
 
         '<div class="card"><div class="lbl">Completed</div>' +
           '<div class="big num">' + fmtInt(c.completed) + "</div>" +
-          '<div class="sub">finished all seven days</div></div>' +
+          '<div class="sub">finished all ten mornings</div></div>' +
 
         '<div class="card hero-card"><div class="lbl">Conversion</div>' +
           '<div class="big num">' + fmtPct(c.conversion_pct) + '<span class="unit">%</span></div>' +
           '<div class="sub num">' + fmtInt(converted) + " of " + fmtInt(c.completed) +
           " who finished the series booked or enrolled. This is the number.</div></div>" +
 
-        '<div class="card wide"><div class="lbl">Track split</div>' +
-          '<div class="stack" aria-hidden="true">' +
-            '<i class="sA" style="width:' + w(tr.A || 0) + '%"></i>' +
-            '<i class="sB" style="width:' + w(tr.B || 0) + '%"></i>' +
-            '<i class="sC" style="width:' + w(tr.C || 0) + '%"></i>' +
-            '<i class="sP" style="width:' + w(tr.pending || 0) + '%"></i>' +
-          "</div>" +
-          '<div class="legend">' +
-            legendRow("sA", "A · Marriage", tr.A || 0, pc(tr.A || 0)) +
-            legendRow("sB", "B · Leadership", tr.B || 0, pc(tr.B || 0)) +
-            legendRow("sC", "C · Health", tr.C || 0, pc(tr.C || 0)) +
-            legendRow("sP", "Still deciding", tr.pending || 0, pc(tr.pending || 0)) +
-          "</div></div>" +
-
         '<div class="card wide"><div class="lbl">Where everyone is</div>' +
           '<div class="bars">' + distHtml + "</div>" +
-          '<div class="sub" style="margin-top:10px">active listeners by day of the series. W is welcomed, no track chosen yet.</div></div>' +
+          '<div class="sub" style="margin-top:10px">men in the series by which morning they are on. 0 means he said yes and his first morning has not come yet.</div></div>' +
 
       "</div>";
 
@@ -818,7 +807,7 @@
           '<span class="c-name"><strong>' + esc(l.name) + "</strong>" +
             '<span class="track">' + esc(trackLine(l.track)) + "</span></span>" +
           '<span class="meta-wrap">' +
-            '<span class="c-day num"><span class="lbl-m">Day </span><b>' + l.day + '</b><span class="of">/' + (l.total_days || 7) + "</span></span>" +
+            '<span class="c-day num"><span class="lbl-m">Day </span><b>' + l.day + '</b><span class="of">/' + (l.total_days || 10) + "</span></span>" +
             '<span class="c-listen"><span class="bar"><i style="width:' + Math.min(100, l.listen_through_pct || 0) + '%"></i></span>' +
               '<span class="pct num">' + Math.round(l.listen_through_pct || 0) + "%</span></span>" +
             '<span class="c-replies num"><b>' + fmtInt(l.replies_count) + '</b><span class="lbl-m">' + (l.replies_count === 1 ? " reply" : " replies") + "</span></span>" +
@@ -891,7 +880,7 @@
       '<div class="p-meta num">' +
         "<span>" + esc(lead.phone_masked || "") + "</span>" +
         '<span class="sep">&middot;</span><span>' + esc(trackLine(lead.track)) + "</span>" +
-        '<span class="sep">&middot;</span><span>Day ' + (lead.day || 0) + " of " + (lead.total_days || 7) + "</span>" +
+        '<span class="sep">&middot;</span><span>Day ' + (lead.day || 0) + " of " + (lead.total_days || 10) + "</span>" +
         "<span>" + chipHtml(lead.status) + "</span>" +
       "</div>";
 
@@ -906,8 +895,8 @@
         " Every reply here stays human until the hold is cleared.</div>";
     }
 
-    /* the seven days */
-    html += '<div class="p-sect"><div class="p-sect-title">The seven days</div>';
+    /* the ten mornings */
+    html += '<div class="p-sect"><div class="p-sect-title">The ten mornings</div>';
     var days = t.days || [];
     if (!days.length) {
       html += '<div class="empty" style="padding:18px 0;text-align:left">Nothing delivered yet.</div>';
@@ -1053,9 +1042,11 @@
     return {
       generated_at: new Date().toISOString(),
       optins: { total: 128, week: 31 },
+      in_series: 97,
+      waiting_on_yes: 31,
       completed: 43,
-      tracks: { A: 61, B: 39, C: 21, pending: 7 },
-      day_distribution: [7, 18, 15, 12, 11, 9, 7, 6],
+      total_days: 10,
+      day_distribution: [7, 18, 15, 12, 11, 9, 7, 6, 5, 4, 3],
       avg_listen_through_pct: 68,
       reply_rate_pct: 54,
       booked: 9,
@@ -1084,7 +1075,7 @@
   }
   function L(id, name, track, day, listen, replies, msg, msgAt, status) {
     return {
-      lead_id: id, name: name, track: track, day: day, total_days: 7,
+      lead_id: id, name: name, track: track, day: day, total_days: 10,
       listen_through_pct: listen, replies_count: replies,
       last_message: msg, last_message_at: msgAt, status: status
     };
@@ -1101,7 +1092,7 @@
   function marcusThread() {
     var lead = {
       lead_id: "marcus", name: "Marcus T.", phone_masked: "(***) ***-4821",
-      track: "A", day: 4, total_days: 7, status: "engaged",
+      track: "A", day: 4, total_days: 10, status: "engaged",
       opted_in_at: at(4, 13, 2), crisis_hold: false, crisis_notified_at: null
     };
     var days = [
@@ -1132,7 +1123,7 @@
   function daleThread() {
     var lead = {
       lead_id: "dale", name: "Dale R.", phone_masked: "(***) ***-2276",
-      track: "A", day: 5, total_days: 7, status: "crisis-flag",
+      track: "A", day: 5, total_days: 10, status: "crisis-flag",
       opted_in_at: at(5, 10, 44), crisis_hold: true, crisis_notified_at: at(0, 21, 39)
     };
     var days = [
@@ -1165,7 +1156,7 @@
   function synthThread(l) {
     var lead = {
       lead_id: l.lead_id, name: l.name, phone_masked: "(***) ***-" + String(3100 + l.name.length * 47).slice(-4),
-      track: l.track, day: l.day, total_days: 7, status: l.status,
+      track: l.track, day: l.day, total_days: 10, status: l.status,
       opted_in_at: at(l.day + 1, 12, 15), crisis_hold: false, crisis_notified_at: null
     };
     var days = [], messages = [];
