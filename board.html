@@ -31,6 +31,7 @@
   --his:#232833; --hers:#2c2718;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{margin:0;background:var(--ground);color:var(--ink);
   font-family:Karla,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15.5px;line-height:1.5}
@@ -99,11 +100,71 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
 .count.over{color:var(--alarm);font-weight:700}
 .flash{margin-top:9px;font-size:14px;font-weight:600}
 .flash.ok{color:var(--go)} .flash.bad{color:var(--alarm)}
+
+/* tabs in the header */
+.tabs{display:flex;gap:4px;margin-left:18px}
+.tab{background:none;border:1px solid transparent;border-radius:99px;padding:5px 13px;font:inherit;font-size:13.5px;
+  font-weight:600;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--brass-wash);color:var(--brass);border-color:var(--brass-bright)}
+.tab:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+@media (max-width:820px){header.bar{flex-wrap:wrap;row-gap:8px} .tabs{margin-left:0;order:3;width:100%}}
+
+/* numbers view */
+.numbers{overflow-y:auto;min-height:0;padding:22px 20px 40px;background:var(--ground)}
+.numbers h2{font-size:20px;font-weight:600;margin:0 0 12px}
+.numbers .sect{margin-bottom:28px}
+.numbers .shead{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.numbers .snote{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--rule);padding:14px 16px 13px}
+.card.wide{grid-column:1/-1}
+.card .lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.card .big{font-family:Fraunces,Georgia,serif;font-size:34px;font-weight:600;line-height:1;color:var(--brass);font-variant-numeric:tabular-nums}
+.card .big .unit{font-size:16px;margin-left:2px;color:var(--muted)}
+.card .sub{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.4}
+.card.key{border-color:var(--brass-bright);background:var(--brass-wash)}
+.bars{display:flex;align-items:flex-end;gap:6px;height:84px;padding-top:18px}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}
+.col .v{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-soft)}
+.col.zero .v{color:var(--muted);opacity:.6}
+.col .bar{width:100%;max-width:34px;background:var(--brass-bright);border-radius:3px 3px 0 0;min-height:3px}
+.col.zero .bar{background:var(--sunk)}
+.col .x{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);margin-top:2px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.search{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--rule);border-radius:9px;font:inherit;font-size:14px;
+  background:var(--surface);color:var(--ink)}
+.search:focus{outline:2px solid var(--brass);outline-offset:1px}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--rule)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--rule-soft);vertical-align:middle;white-space:nowrap}
+th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
+  font-weight:500;background:var(--surface-2)}
+tr.lrow{cursor:pointer} tr.lrow:hover td{background:var(--surface-2)}
+tr:last-child td{border-bottom:none}
+td.name b{font-family:Fraunces,Georgia,serif;font-size:15.5px;font-weight:600;display:block}
+td.name span{font-size:12px;color:var(--muted)}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+td.msg{white-space:normal;max-width:34ch;color:var(--ink-soft);font-size:13.5px}
+td.msg i{color:var(--muted)}
+.lbar{display:inline-block;width:70px;height:6px;background:var(--sunk);border-radius:99px;vertical-align:middle;margin-right:8px;overflow:hidden}
+.lbar i{display:block;height:100%;background:var(--brass-bright)}
+.chip{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 8px;border-radius:99px;background:var(--sunk);color:var(--muted);font-weight:600}
+.chip.engaged{background:var(--go-wash);color:var(--go)}
+.chip.warming{background:var(--brass-wash);color:var(--brass)}
+.chip.invited{background:none;border:1px dashed var(--rule);color:var(--muted)}
+.chip.booked,.chip.enrolled{background:var(--brass-bright);color:#fff}
+.chip.crisis-flag{background:var(--alarm);color:#fff}
+.chip.re-engage{background:var(--sunk);color:var(--ink-soft)}
+.tempty{padding:28px;text-align:center;color:var(--muted)}
 </style></head><body>
 <div class="shell">
   <header class="bar">
     <h1>Her board</h1>
-    <span class="sub">every text, both directions</span>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button class="tab" role="tab" id="t-conv" aria-selected="true" aria-controls="cols">Conversations</button>
+      <button class="tab" role="tab" id="t-num" aria-selected="false" aria-controls="numbers">Numbers</button>
+    </nav>
     <span class="live" id="live"><span class="dot"></span>loading</span>
   </header>
   <div class="cols" id="cols">
@@ -127,6 +188,25 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
         <div id="flash"></div>
       </div>
     </div>
+  </div>
+  <div class="numbers" id="numbers" role="tabpanel" hidden>
+    <section class="sect">
+      <div class="shead"><h2>The cohort</h2><span class="snote" id="refreshed"></span></div>
+      <div class="cards" id="cards"><div class="tempty">Loading the numbers.</div></div>
+    </section>
+    <section class="sect">
+      <div class="shead"><h2>Every man</h2><span class="snote" id="tnote"></span></div>
+      <div class="toolbar">
+        <input class="search" id="q" type="search" placeholder="Search a name or his last message" aria-label="Search">
+        <div id="chips"></div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Man</th><th>Morning</th><th>Listened</th><th>Replies</th><th>Last from him</th><th>Where he stands</th></tr></thead>
+          <tbody id="tbody"><tr><td colspan="6" class="tempty">Loading.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </div>
 <script>
@@ -231,6 +311,87 @@ send.addEventListener("click",function(){
     else{send.disabled=false;f.className="flash bad";f.textContent=(j&&j.error)||"That did not send. Nothing went out."}
    }).catch(function(){send.disabled=false;send.textContent="Send";
     var f=document.getElementById("flash");f.className="flash bad";f.textContent="That did not send. Nothing went out."})});
+
+/* ---------------- the Numbers tab ---------------- */
+var STATUS={invited:"Invited",engaged:"Engaged",warming:"Warming","re-engage":"Re-engage","crisis-flag":"Crisis",booked:"Booked",enrolled:"Enrolled"};
+var FILTERS=["all","crisis-flag","invited","engaged","warming","re-engage","booked","enrolled"];
+var men=[], fq="", fstatus="all", numbersLoaded=false;
+function fmtInt(n){return (n==null||isNaN(n))?"0":Number(n).toLocaleString("en-US")}
+function tShort(iso){var d=new Date(iso);return d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}
+function card(lbl,big,sub,extra){return '<div class="card'+(extra||"")+'"><div class="lbl">'+lbl+'</div><div class="big">'+big+'</div><div class="sub">'+sub+'</div></div>'}
+function renderCohort(c){
+  var conv=(c.booked||0)+(c.enrolled||0);
+  var dist=c.day_distribution||[], max=Math.max.apply(null,dist.concat([1])), bars="";
+  for(var i=0;i<dist.length;i++){
+    var h=Math.max(3,Math.round(dist[i]/max*54));
+    bars+='<div class="col'+(dist[i]===0?" zero":"")+'" title="'+(i===0?"Said yes, first morning not sent yet":"Morning "+i)+': '+dist[i]+'">'+
+      '<span class="v">'+fmtInt(dist[i])+'</span><span class="bar" style="height:'+h+'px"></span><span class="x">'+i+'</span></div>'}
+  document.getElementById("cards").innerHTML=
+    card("In the series",fmtInt(c.in_series),"said yes and are getting mornings"," key")+
+    card("Invited, waiting",fmtInt(c.waiting_on_yes),"first text sent, no yes back yet")+
+    card("Came in this week",fmtInt(c.optins&&c.optins.week),fmtInt(c.optins&&c.optins.total)+" men in the funnel all told")+
+    card("Listen-through",fmtInt(c.avg_listen_through_pct)+'<span class="unit">%</span>',"average across every morning delivered")+
+    card("Reply rate",fmtInt(c.reply_rate_pct)+'<span class="unit">%</span>',"of the men in the series have written back")+
+    card("Booked",fmtInt(c.booked),"calls on the calendar")+
+    card("Enrolled",fmtInt(c.enrolled),"in the program")+
+    card("Completed",fmtInt(c.completed),"finished all ten mornings")+
+    card("Conversion",fmtInt(c.conversion_pct)+'<span class="unit">%</span>',fmtInt(conv)+" of "+fmtInt(c.completed)+" who finished booked or enrolled")+
+    '<div class="card wide"><div class="lbl">Where everyone is</div><div class="bars">'+bars+'</div>'+
+    '<div class="sub">men in the series by which morning they are on. 0 means he said yes and his first morning has not come yet. Test lines are not counted anywhere on this page.</div></div>';
+  document.getElementById("refreshed").textContent="refreshed "+tShort(c.generated_at||new Date().toISOString());
+}
+function renderChips(){
+  document.getElementById("chips").innerHTML=FILTERS.map(function(f){
+    return '<button class="fbtn" data-f="'+f+'" aria-pressed="'+(fstatus===f)+'">'+(f==="all"?"All":STATUS[f])+'</button>'}).join("")}
+function renderTable(){
+  var list=men.filter(function(l){
+    if(fstatus!=="all"&&l.status!==fstatus)return false;
+    if(!fq)return true;
+    return (l.name||"").toLowerCase().indexOf(fq)>=0||(l.last_message||"").toLowerCase().indexOf(fq)>=0});
+  var inS=men.filter(function(l){return l.consented}).length;
+  document.getElementById("tnote").textContent=inS+(inS===1?" in the series":" in the series")+(men.length-inS?", "+(men.length-inS)+" invited and waiting":"");
+  var tb=document.getElementById("tbody");
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" class="tempty">'+(men.length?"No one matches that filter.":"Nobody yet. The first men will show up here.")+'</td></tr>';return}
+  tb.innerHTML=list.map(function(l){
+    var pct=Math.round(l.listen_through_pct||0);
+    return '<tr class="lrow" data-id="'+esc(l.lead_id)+'">'+
+      '<td class="name"><b>'+esc(l.name)+'</b><span>'+(l.consented?"in the series":"invited, waiting on yes")+'</span></td>'+
+      '<td class="num">'+(l.consented?esc(l.day)+' <span style="color:var(--muted)">/ '+esc(l.total_days||10)+'</span>':'<span style="color:var(--muted)">not started</span>')+'</td>'+
+      '<td class="num"><span class="lbar"><i style="width:'+Math.min(100,pct)+'%"></i></span>'+pct+'%</td>'+
+      '<td class="num">'+fmtInt(l.replies_count)+'</td>'+
+      '<td class="msg">'+(l.last_message?esc(l.last_message):"<i>No replies yet</i>")+(l.last_message_at?' <span style="color:var(--muted);font-size:11.5px">'+esc(when(l.last_message_at))+'</span>':"")+'</td>'+
+      '<td><span class="chip '+esc(l.status)+'">'+esc(STATUS[l.status]||l.status)+'</span></td></tr>'}).join("")}
+function loadNumbers(){
+  var H={headers:{"Authorization":"Bearer "+key}};
+  fetch(API+"api/dashboard/cohort",H).then(function(r){return r.json()}).then(renderCohort)
+    .catch(function(){document.getElementById("cards").innerHTML='<div class="tempty">Could not load the numbers.</div>'});
+  fetch(API+"api/dashboard/listeners",H).then(function(r){return r.json()}).then(function(j){
+    men=(j&&j.listeners)||[];numbersLoaded=true;renderChips();renderTable()})
+    .catch(function(){document.getElementById("tbody").innerHTML='<tr><td colspan="6" class="tempty">Could not load.</td></tr>'});
+}
+document.getElementById("chips").addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest("[data-f]"):null; if(!b)return;
+  fstatus=b.getAttribute("data-f");renderChips();renderTable()});
+document.getElementById("q").addEventListener("input",function(){fq=this.value.trim().toLowerCase();renderTable()});
+document.getElementById("tbody").addEventListener("click",function(e){
+  var r=e.target.closest?e.target.closest(".lrow"):null; if(!r)return;
+  showTab("conv");loadThread(r.getAttribute("data-id"))});
+
+/* ---------------- tabs ---------------- */
+function showTab(which){
+  var conv=which==="conv";
+  document.getElementById("cols").hidden=!conv;
+  document.getElementById("numbers").hidden=conv;
+  document.getElementById("t-conv").setAttribute("aria-selected",String(conv));
+  document.getElementById("t-num").setAttribute("aria-selected",String(!conv));
+  if(!conv){ if(!numbersLoaded)loadNumbers(); if(location.hash!=="#numbers")history.replaceState(null,"","#numbers") }
+  else if(location.hash){ history.replaceState(null,"",location.pathname+location.search) }
+}
+document.getElementById("t-conv").addEventListener("click",function(){showTab("conv")});
+document.getElementById("t-num").addEventListener("click",function(){showTab("num")});
+window.addEventListener("hashchange",function(){showTab(location.hash==="#numbers"?"num":"conv")});
+
 loadList();
-setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current);} },20000);
+showTab(location.hash==="#numbers"?"num":"conv");
+setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current); if(numbersLoaded&&!document.getElementById("numbers").hidden)loadNumbers();} },20000);
 </script></body></html>
