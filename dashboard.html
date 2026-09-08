@@ -348,6 +348,7 @@
   .chip.engaged{color:var(--green);background:rgba(143,185,150,.1);border:1px solid rgba(143,185,150,.25)}
   .chip.warming{color:var(--gold-2);background:rgba(212,179,106,.1);border:1px solid rgba(212,179,106,.28)}
   .chip.re-engage{color:var(--slate);background:rgba(147,163,180,.1);border:1px solid rgba(147,163,180,.24)}
+  .chip.invited{color:var(--slate);background:rgba(147,163,180,.06);border:1px dashed rgba(147,163,180,.35)}
   .chip.booked{color:#1c1207;background:var(--gold);border:1px solid var(--gold)}
   .chip.booked::before{background:#1c1207}
   .chip.enrolled{color:#1c1207;background:var(--gold-2);border:1px solid var(--gold-2);box-shadow:0 0 16px rgba(212,179,106,.35)}
@@ -552,6 +553,7 @@
 
   var TRACKS = { A: "Marriage", B: "Leadership", C: "Health" };
   var STATUS = {
+    "invited":     { label: "Invited" },
     "engaged":     { label: "Engaged" },
     "warming":     { label: "Warming" },
     "re-engage":   { label: "Re-engage" },
@@ -619,9 +621,11 @@
     if (s < 86400 * 7) return Math.floor(s / 86400) + "d";
     return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
-  function trackLine(t) {
-    if (!t) return "No track yet";
-    return "Track " + t + ", " + (TRACKS[t] || "");
+  // One track now, so this line carries the only distinction left that matters:
+  // has he said yes, or is he still just invited.
+  function trackLine(l) {
+    var started = l && (l.consented === true || (l.consented === undefined && l.status !== "invited"));
+    return started ? "In the series" : "Invited, waiting on yes";
   }
   function chipHtml(status) {
     var m = STATUS[status] || { label: status || "?" };
@@ -726,6 +730,7 @@
   var FILTERS = [
     { id: "all", label: "All" },
     { id: "crisis-flag", label: "Crisis", cls: "crisis" },
+    { id: "invited", label: "Invited" },
     { id: "engaged", label: "Engaged" },
     { id: "warming", label: "Warming" },
     { id: "re-engage", label: "Re-engage" },
@@ -781,7 +786,12 @@
     listenersNote.className = "sect-note" + (crisisN ? " alert" : "");
     listenersNote.textContent = crisisN
       ? crisisN + (crisisN === 1 ? " thread needs eyes now" : " threads need eyes now")
-      : fmtInt(allListeners.length) + " people in the series";
+      : (function () {
+          var inS = allListeners.filter(function (l) { return l.consented; }).length;
+          var wait = allListeners.length - inS;
+          return fmtInt(inS) + (inS === 1 ? " man in the series" : " men in the series") +
+                 (wait ? ", " + fmtInt(wait) + " invited and waiting" : "");
+        })();
 
     if (!list.length) {
       listenersBody.innerHTML =
@@ -805,9 +815,11 @@
         '<button type="button" class="row' + (l.status === "crisis-flag" ? " crisis" : "") +
         '" data-id="' + esc(l.lead_id) + '">' +
           '<span class="c-name"><strong>' + esc(l.name) + "</strong>" +
-            '<span class="track">' + esc(trackLine(l.track)) + "</span></span>" +
+            '<span class="track">' + esc(trackLine(l)) + "</span></span>" +
           '<span class="meta-wrap">' +
-            '<span class="c-day num"><span class="lbl-m">Day </span><b>' + l.day + '</b><span class="of">/' + (l.total_days || 10) + "</span></span>" +
+            '<span class="c-day num">' + (l.consented
+              ? '<span class="lbl-m">Day </span><b>' + l.day + '</b><span class="of">/' + (l.total_days || 10) + "</span>"
+              : '<span class="of">Not started</span>') + "</span>" +
             '<span class="c-listen"><span class="bar"><i style="width:' + Math.min(100, l.listen_through_pct || 0) + '%"></i></span>' +
               '<span class="pct num">' + Math.round(l.listen_through_pct || 0) + "%</span></span>" +
             '<span class="c-replies num"><b>' + fmtInt(l.replies_count) + '</b><span class="lbl-m">' + (l.replies_count === 1 ? " reply" : " replies") + "</span></span>" +
@@ -879,7 +891,7 @@
       '<div class="p-name">' + esc(lead.name || "Listener") + "</div>" +
       '<div class="p-meta num">' +
         "<span>" + esc(lead.phone_masked || "") + "</span>" +
-        '<span class="sep">&middot;</span><span>' + esc(trackLine(lead.track)) + "</span>" +
+        '<span class="sep">&middot;</span><span>' + esc(trackLine(lead)) + "</span>" +
         '<span class="sep">&middot;</span><span>Day ' + (lead.day || 0) + " of " + (lead.total_days || 10) + "</span>" +
         "<span>" + chipHtml(lead.status) + "</span>" +
       "</div>";
@@ -1075,7 +1087,7 @@
   }
   function L(id, name, track, day, listen, replies, msg, msgAt, status) {
     return {
-      lead_id: id, name: name, track: track, day: day, total_days: 10,
+      lead_id: id, name: name, track: track, day: day, total_days: 10, consented: true,
       listen_through_pct: listen, replies_count: replies,
       last_message: msg, last_message_at: msgAt, status: status
     };
