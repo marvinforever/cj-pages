@@ -154,6 +154,7 @@ td.msg i{color:var(--muted)}
 .chip.engaged{background:var(--go-wash);color:var(--go)}
 .chip.warming{background:var(--brass-wash);color:var(--brass)}
 .chip.invited{background:none;border:1px dashed var(--rule);color:var(--muted)}
+.chip.paused{background:var(--sunk);color:var(--ink-soft);border:1px solid var(--rule)}
 .chip.booked,.chip.enrolled{background:var(--brass-bright);color:#fff}
 .chip.crisis-flag{background:var(--alarm);color:#fff}
 .chip.re-engage{background:var(--sunk);color:var(--ink-soft)}
@@ -314,8 +315,8 @@ send.addEventListener("click",function(){
     var f=document.getElementById("flash");f.className="flash bad";f.textContent="That did not send. Nothing went out."})});
 
 /* ---------------- the Numbers tab ---------------- */
-var STATUS={invited:"Invited",engaged:"Engaged",warming:"Warming","re-engage":"Re-engage","crisis-flag":"Crisis",booked:"Booked",enrolled:"Enrolled"};
-var FILTERS=["all","crisis-flag","invited","engaged","warming","re-engage","booked","enrolled"];
+var STATUS={invited:"Invited",paused:"Paused",engaged:"Engaged",warming:"Warming","re-engage":"Re-engage","crisis-flag":"Crisis",booked:"Booked",enrolled:"Enrolled"};
+var FILTERS=["all","crisis-flag","invited","paused","engaged","warming","re-engage","booked","enrolled"];
 var men=[], fq="", fstatus="all", numbersLoaded=false;
 function fmtInt(n){return (n==null||isNaN(n))?"0":Number(n).toLocaleString("en-US")}
 function tShort(iso){var d=new Date(iso);return d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})}
