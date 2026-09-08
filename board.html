@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The Daily Whisper: her board</title>
+<title>Daily Whisper Analytics Board</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -41,6 +41,7 @@ h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0}
 .shell{display:grid;grid-template-rows:auto 1fr;height:100vh;max-width:1240px;margin:0 auto}
 header.bar{display:flex;align-items:baseline;gap:14px;padding:16px 20px 12px;border-bottom:1px solid var(--rule)}
 header.bar h1{font-size:22px;font-weight:600}
+@media (max-width:820px){header.bar h1{font-size:18px}}
 header.bar .sub{font-size:13.5px;color:var(--muted)}
 header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--go);margin-right:6px}
@@ -160,7 +161,7 @@ td.msg i{color:var(--muted)}
 </style></head><body>
 <div class="shell">
   <header class="bar">
-    <h1>Her board</h1>
+    <h1>Daily Whisper Analytics Board</h1>
     <nav class="tabs" role="tablist" aria-label="Views">
       <button class="tab" role="tab" id="t-conv" aria-selected="true" aria-controls="cols">Conversations</button>
       <button class="tab" role="tab" id="t-num" aria-selected="false" aria-controls="numbers">Numbers</button>
