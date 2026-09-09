@@ -41,7 +41,7 @@ function askPhone(intro){
    '<input id="first" placeholder="First name" value="'+esc(n)+'" autocomplete="given-name">'+
    '<input id="phone" type="tel" placeholder="Mobile number" autocomplete="tel" required>'+
    '<input class="hp" id="website" tabindex="-1" autocomplete="off">'+
-   '<button class="btn" id="go">Text me the first one</button>'+
+   '<button class="btn" id="go">Send me the first one</button>'+
    '<div class="err" id="err"></div></form>'+
    '<p class="or" id="num">Or text the word <b>DAILY</b> to my number.</p>';
   fetch(API+"api/public/number").then(function(r){return r.json()}).then(function(j){
@@ -55,8 +55,8 @@ function askPhone(intro){
       body:JSON.stringify({first:document.getElementById("first").value,phone:document.getElementById("phone").value,email:e,website:document.getElementById("website").value})})
      .then(function(r){return r.json()}).then(function(j){
         if(j&&j.ok){ var nn=j.first||document.getElementById("first").value.trim(); location.replace("joined.html?s="+encodeURIComponent(j.state||"sent")+(nn?"&n="+encodeURIComponent(nn):"")) }
-        else{ err.textContent=(j&&j.error)||"That didn't go through. Text DAILY instead."; go.disabled=false; go.textContent="Text me the first one" }
-     }).catch(function(){err.textContent="That didn't go through. Text DAILY instead.";go.disabled=false;go.textContent="Text me the first one"});
+        else{ err.textContent=(j&&j.error)||"That didn't go through. Text DAILY instead."; go.disabled=false; go.textContent="Send me the first one" }
+     }).catch(function(){err.textContent="That didn't go through. Text DAILY instead.";go.disabled=false;go.textContent="Send me the first one"});
   });
 }
 function fallback(intro){
@@ -65,15 +65,15 @@ function fallback(intro){
     if(j&&j.ok){document.getElementById("num").innerHTML='Text the word <b>DAILY</b> to <span class="phone">'+esc(j.pretty)+'</span><br><a class="btn" href="sms:'+esc(j.e164)+'&body=DAILY">Open my messages</a>'}
   }).catch(function(){})}
 switch(s){
-  case "sent": H.textContent=hi?"Check your phone, "+n+".":"Check your phone."; B.innerHTML="<p>I just sent you a text. Reply <b>YES</b> to it and your first morning arrives tomorrow at 6am.</p><p>Nothing to attend. Nothing to schedule. Nothing to catch up on if you miss one.</p>"; break;
-  case "queued": H.textContent="You're on the list."; B.innerHTML="<p>"+esc(hi)+"It's a little early or a little late where you are, so my text will reach you at 7:30 your time. Reply <b>YES</b> to it and your first morning follows the next day at 6am.</p>"; break;
-  case "invited": H.textContent="Look for my text."; B.innerHTML="<p>"+esc(hi)+"I already sent you one. Find it and reply <b>YES</b>, and your first morning arrives tomorrow at 6am.</p>"; break;
-  case "already": H.textContent=hi?"You're already in, "+n+".":"You're already in."; B.innerHTML="<p>Your next morning is on its way at 6am. Nothing else to do.</p>"; break;
+  case "sent": H.textContent=hi?"Check your phone, "+n+".":"Check your phone."; B.innerHTML="<p>I just sent you a text. Reply <b>YES</b> to it and your first morning arrives tomorrow.</p><p>Nothing to attend. Nothing to schedule. Nothing to catch up on if you miss one.</p>"; break;
+  case "queued": H.textContent="You're on the list."; B.innerHTML="<p>"+esc(hi)+"It's a little early or a little late where you are, so my text will reach you at 7:30 your time. Reply <b>YES</b> to it and your first morning follows the next day.</p>"; break;
+  case "invited": H.textContent="Look for my text."; B.innerHTML="<p>"+esc(hi)+"I already sent you one. Find it and reply <b>YES</b>, and your first morning arrives tomorrow.</p>"; break;
+  case "already": H.textContent=hi?"You're already in, "+n+".":"You're already in."; B.innerHTML="<p>Your next morning is on its way. Nothing else to do.</p>"; break;
   case "optedout": H.textContent="You stepped away earlier."; fallback("No hard feelings. If you want back in, it takes one text."); break;
-  case "nophone": H.textContent="Where should I text you?"; askPhone(esc(hi)+"The mornings arrive by text, so I need a mobile number."); break;
+  case "nophone": H.textContent=n?"One more thing, "+n+".":"One more thing."; askPhone("The mornings arrive by text, so I need a mobile number."); break;
   case "nocontact": H.textContent="Let's do this the simple way."; fallback("That link didn't carry your details."); break;
-  case "": H.textContent="Ten mornings. Ten minutes each."; askPhone("I'll be in your ear at six, before the day gets to you. Nothing to attend, nothing to schedule, nothing to catch up on if you miss one. Where should I text you?"); break;
-  case "needphone": H.textContent=hi?"Where should I text you, "+n+"?":"Where should I text you?"; askPhone("The mornings arrive by text, so I need a mobile number. You'll get one text asking you to reply YES, and the first morning comes the day after."); break;
+  case "": H.textContent="Ten mornings. Ten minutes each."; askPhone("A short recording from me each morning, with one thing to do before the day starts. Nothing to attend, nothing to schedule, nothing to catch up on if you miss one. Enter your number and the first one arrives tomorrow morning."); break;
+  case "needphone": H.textContent=n?"One more thing, "+n+".":"One more thing."; askPhone("The mornings arrive by text, so I need a mobile number. You'll get one text asking you to reply YES, and the first morning follows the next day."); break;
   default: H.textContent="Something didn't connect."; fallback("Not your fault. The simple way always works:");
 }
 </script></body></html>
