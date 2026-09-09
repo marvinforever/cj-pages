@@ -17,6 +17,14 @@ a.btn{display:inline-block;margin-top:8px;background:var(--brass-bright);color:#
 a.btn:hover{background:var(--brass)}
 .sig{font-family:Fraunces,Georgia,serif;margin-top:22px;color:var(--ink)}
 .fine{font-size:13px;color:var(--muted);margin-top:18px;border-top:1px solid var(--rule);padding-top:14px}
+form{display:grid;gap:10px;margin:14px 0 6px}
+input{width:100%;padding:12px 13px;border:1px solid var(--rule);border-radius:10px;font:inherit;font-size:16px;background:var(--surface);color:var(--ink)}
+input:focus{outline:2px solid var(--brass);outline-offset:1px}
+button.btn{background:var(--brass-bright);color:#fff;border:none;font:inherit;font-weight:700;padding:12px 22px;border-radius:10px;cursor:pointer}
+button.btn:hover{background:var(--brass)} button.btn:disabled{opacity:.5}
+.or{font-size:13.5px;color:var(--muted);margin-top:14px}
+.err{color:#a33b2c;font-weight:600;font-size:14.5px}
+.hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
 </style></head><body>
 <div class="card" id="card"><p class="eyebrow">The Daily Whisper</p><h1 id="h">One moment.</h1><div id="body"></div><p class="sig">Christine</p>
 <p class="fine">Ten mornings, about ten minutes each, by text. Reply STOP to any of them to opt out.</p></div>
@@ -26,6 +34,31 @@ var hi=n?"Hey "+n+". ":"";
 var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
 function esc(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 var H=document.getElementById("h"),B=document.getElementById("body");
+var e=q.get("e")||"";
+function askPhone(intro){
+  B.innerHTML='<p>'+intro+'</p>'+
+   '<form id="f" autocomplete="on">'+
+   '<input id="first" placeholder="First name" value="'+esc(n)+'" autocomplete="given-name">'+
+   '<input id="phone" type="tel" placeholder="Mobile number" autocomplete="tel" required>'+
+   '<input class="hp" id="website" tabindex="-1" autocomplete="off">'+
+   '<button class="btn" id="go">Text me the first one</button>'+
+   '<div class="err" id="err"></div></form>'+
+   '<p class="or" id="num">Or text the word <b>DAILY</b> to my number.</p>';
+  fetch(API+"api/public/number").then(function(r){return r.json()}).then(function(j){
+    if(j&&j.ok){document.getElementById("num").innerHTML='Or just text the word <b>DAILY</b> to <span class="phone">'+esc(j.pretty)+'</span> <a class="btn" href="sms:'+esc(j.e164)+'&body=DAILY">Open my messages</a>'}
+  }).catch(function(){});
+  document.getElementById("f").addEventListener("submit",function(ev){
+    ev.preventDefault();
+    var go=document.getElementById("go"),err=document.getElementById("err");
+    go.disabled=true;go.textContent="One moment...";err.textContent="";
+    fetch(API+"join-phone",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({first:document.getElementById("first").value,phone:document.getElementById("phone").value,email:e,website:document.getElementById("website").value})})
+     .then(function(r){return r.json()}).then(function(j){
+        if(j&&j.ok){ var nn=j.first||document.getElementById("first").value.trim(); location.replace("joined.html?s="+encodeURIComponent(j.state||"sent")+(nn?"&n="+encodeURIComponent(nn):"")) }
+        else{ err.textContent=(j&&j.error)||"That didn't go through. Text DAILY instead."; go.disabled=false; go.textContent="Text me the first one" }
+     }).catch(function(){err.textContent="That didn't go through. Text DAILY instead.";go.disabled=false;go.textContent="Text me the first one"});
+  });
+}
 function fallback(intro){
   B.innerHTML='<p>'+intro+'</p><p id="num">Text the word <b>DAILY</b> to my number and you are in.</p>';
   fetch(API+"api/public/number").then(function(r){return r.json()}).then(function(j){
@@ -37,8 +70,10 @@ switch(s){
   case "invited": H.textContent="Look for my text."; B.innerHTML="<p>"+esc(hi)+"I already sent you one. Find it and reply <b>YES</b>, and your first morning arrives tomorrow at 6am.</p>"; break;
   case "already": H.textContent=hi?"You're already in, "+n+".":"You're already in."; B.innerHTML="<p>Your next morning is on its way at 6am. Nothing else to do.</p>"; break;
   case "optedout": H.textContent="You stepped away earlier."; fallback("No hard feelings. If you want back in, it takes one text."); break;
-  case "nophone": H.textContent="I don't have a number for you."; fallback(esc(hi)+"The mornings arrive by text, so I need one."); break;
+  case "nophone": H.textContent="Where should I text you?"; askPhone(esc(hi)+"The mornings arrive by text, so I need a mobile number."); break;
   case "nocontact": H.textContent="Let's do this the simple way."; fallback("That link didn't carry your details."); break;
+  case "": H.textContent="Ten mornings. Ten minutes each."; askPhone("I'll be in your ear at six, before the day gets to you. Nothing to attend, nothing to schedule, nothing to catch up on if you miss one. Where should I text you?"); break;
+  case "needphone": H.textContent=hi?"Where should I text you, "+n+"?":"Where should I text you?"; askPhone("The mornings arrive by text, so I need a mobile number. You'll get one text asking you to reply YES, and the first morning comes the day after."); break;
   default: H.textContent="Something didn't connect."; fallback("Not your fault. The simple way always works:");
 }
 </script></body></html>
