@@ -9,7 +9,7 @@
     <script>window.CJ = {
       episodeTitle: "The Roommate Drift",
       day: 3,                                  // 1-based
-      totalDays: 7,
+      totalDays: 10,
       audioUrl: "https://cdn.../track-a-day-3.mp3",
       token: "d41cf3a09b7e...",                // the cj_deliveries token
       optInUrl: "https://go.thechristinejewell.com"   // optional, expired-state CTA
@@ -43,12 +43,12 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0d0805">
 <meta name="color-scheme" content="dark">
-<title>Daily Audio &middot; Christine Jewell</title>
+<title>The Daily Whisper &middot; Christine Jewell</title>
 <link rel="icon" href="data:,">
 <script>
 (function () {
   var m = location.pathname.match(/\/d\/([A-Za-z0-9]+)/);
-  if (m && !location.hash) { history.replaceState(null, "", "/player.html#t=" + m[1]); }
+  if (m && !location.hash) { history.replaceState(null, "", location.pathname.replace(/\/d\/[A-Za-z0-9]+.*$/, "/player.html") + "#t=" + m[1]); }
   if (m && !window.__CJ_PATH_TOKEN) { window.__CJ_PATH_TOKEN = m[1]; }
 })();
 </script>
@@ -282,7 +282,7 @@
   <main>
     <!-- player state -->
     <section id="view-player" hidden>
-      <p class="eyebrow"><span class="rule"></span><span id="eyebrow-text">Day 1 of 7</span><span class="rule"></span></p>
+      <p class="eyebrow"><span class="rule"></span><span id="eyebrow-text">Day 1 of 10</span><span class="rule"></span></p>
       <h1 class="title" id="episode-title">Today's Track</h1>
       <div class="daydots" id="daydots" aria-hidden="true"></div>
 
@@ -305,11 +305,11 @@
 
     <!-- expired state -->
     <section id="view-expired" hidden>
-      <p class="eyebrow"><span class="rule"></span><span>The Daily Audio Series</span><span class="rule"></span></p>
+      <p class="eyebrow"><span class="rule"></span><span>The Daily Whisper</span><span class="rule"></span></p>
       <h1 class="x-title">This link has expired.</h1>
       <p class="x-sub">Each day's track opens from its own personal link, and this one has finished its run. The series itself is still open to you.</p>
-      <a class="cta" id="optin-cta" href="https://go.thechristinejewell.com">Get the seven day series</a>
-      <p class="x-under">One short track a day, free, right here by text.</p>
+      <a class="cta" id="optin-cta" href="https://go.thechristinejewell.com">Get the Daily Whisper</a>
+      <p class="x-under">Ten mornings, about ten minutes each, free, right here by text.</p>
     </section>
   </main>
 
@@ -346,7 +346,7 @@
   var totalEl  = document.getElementById("t-total");
   var noteEl   = document.getElementById("audio-note");
 
-  var totalDays = CJ.totalDays || 7;
+  var totalDays = CJ.totalDays || 10;
   var day       = Math.min(Math.max(CJ.day || 1, 1), totalDays);
 
   document.getElementById("eyebrow-text").textContent = "Day " + day + " of " + totalDays;
@@ -515,7 +515,7 @@
   if ("mediaSession" in navigator) {
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: CJ.episodeTitle || "Daily Audio",
+        title: CJ.episodeTitle || "The Daily Whisper",
         artist: "Christine Jewell",
         album: "Day " + day + " of " + totalDays
       });
@@ -546,7 +546,7 @@
     return {
       episodeTitle: "The Roommate Drift",
       day: 3,
-      totalDays: 7,
+      totalDays: 10,
       token: "demo",
       demo: true,
       audioUrl: URL.createObjectURL(new Blob([buf], { type: "audio/wav" }))
