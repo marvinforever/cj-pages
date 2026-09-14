@@ -168,6 +168,29 @@ td.msg i{color:var(--muted)}
 .drop small{display:block;font-size:12.5px;color:var(--muted);margin-top:6px}
 .drop input{display:none}
 .rlist{display:grid;gap:8px;margin-top:14px}
+/* Texts tab */
+.txt{background:var(--surface);border:1px solid var(--rule);padding:14px 16px 12px;margin-bottom:12px}
+.txt .th{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.txt .tl{font-family:Fraunces,Georgia,serif;font-size:16px;font-weight:600}
+.txt .tb{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--brass);border:1px solid var(--brass-bright);border-radius:99px;padding:1px 8px}
+.txt .thelp{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.txt textarea{width:100%;min-height:150px;padding:11px 13px;border:1px solid var(--rule);border-radius:10px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:14.5px;line-height:1.5;resize:vertical}
+.txt textarea:focus{outline:2px solid var(--brass);outline-offset:1px}
+.txt .tact{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.txt .tcount{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.txt .tcount.over{color:var(--alarm)}
+.txt .tmsg{margin-top:8px;font-size:14px;white-space:pre-line}
+.txt .tmsg.ok{color:var(--go);font-weight:600} .txt .tmsg.bad{color:var(--alarm);font-weight:600}
+.txt details{margin-top:8px;font-size:13.5px} .txt summary{cursor:pointer;color:var(--muted)}
+.txt .hist{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:start;padding:8px 0;border-top:1px solid var(--rule-soft)}
+.txt .hist pre{margin:0;white-space:pre-wrap;font:inherit;font-size:13px;color:var(--ink-soft);max-height:120px;overflow:auto}
+.txt .hist .hm{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);margin-bottom:4px}
+.tgroup{font-family:Fraunces,Georgia,serif;font-size:19px;font-weight:600;margin:26px 0 10px}
+.tgroup:first-child{margin-top:0}
+.tguide{background:var(--brass-wash);border:1px solid var(--brass-bright);padding:12px 16px;font-size:14px;margin-bottom:18px}
+.tguide b{color:var(--brass)}
+.ghost{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
+.ghost:hover{border-color:var(--brass-bright);color:var(--brass)} .ghost:disabled{opacity:.45;cursor:default}
 .rec{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
 .rec .dn{font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:700;color:var(--brass);line-height:1;text-align:center}
 .rec .rt{font-family:Fraunces,Georgia,serif;font-size:16px;font-weight:600}
@@ -189,6 +212,7 @@ td.msg i{color:var(--muted)}
       <button class="tab" role="tab" id="t-conv" aria-selected="true" aria-controls="cols">Conversations</button>
       <button class="tab" role="tab" id="t-num" aria-selected="false" aria-controls="numbers">Numbers</button>
       <button class="tab" role="tab" id="t-rec" aria-selected="false" aria-controls="recordings">Recordings</button>
+      <button class="tab" role="tab" id="t-txt" aria-selected="false" aria-controls="texts">Texts</button>
     </nav>
     <span class="live" id="live"><span class="dot"></span>loading</span>
   </header>
@@ -235,6 +259,10 @@ td.msg i{color:var(--muted)}
       <div class="shead"><h2>The ten mornings</h2><span class="snote" id="recnote"></span></div>
       <div class="rlist" id="rlist"><div class="tempty">Loading.</div></div>
     </section>
+  </div>
+  <div class="numbers" id="texts" role="tabpanel" hidden>
+    <div class="tguide"><b>Every text a man receives, in your words.</b> Change any of them here and it is live on the next send. Words in curly braces, like <span class="mono">{link}</span>, are filled in for each man and have to stay. <b>Text me this</b> sends the draft to your own phone first, so you can read it the way he will. Every earlier version is kept under History.</div>
+    <div id="tlist"><div class="tempty">Loading.</div></div>
   </div>
   <div class="numbers" id="numbers" role="tabpanel" hidden>
     <section class="sect">
@@ -477,22 +505,79 @@ function takeFile(file){
   document.getElementById("daycancel").addEventListener("click",function(){pendingFile=null;document.getElementById("daypick").classList.remove("show");uplog("","")});
 })();
 
+/* ---------------- the Texts tab ---------------- */
+var textsLoaded=false, TEXTS={};
+function segs(n){return n<=160?1:Math.ceil(n/153)}
+function tmsg(key,cls,msg){var el=document.getElementById("tm-"+key);el.className="tmsg "+cls;el.textContent=msg}
+function tcount(key){var ta=document.getElementById("ta-"+key),c=document.getElementById("tc-"+key),n=ta.value.length;
+  c.textContent=n+" characters, "+segs(n)+(segs(n)===1?" text":" texts");c.className="tcount"+(n>700?" over":"");
+  var t=TEXTS[key];document.getElementById("sv-"+key).disabled=(ta.value.trim()===t.body.trim())}
+function renderTexts(list){
+  var groups=[];list.forEach(function(t){if(groups.indexOf(t.group)<0)groups.push(t.group);TEXTS[t.key]=t});
+  document.getElementById("tlist").innerHTML=groups.map(function(g){
+    return '<div class="tgroup">'+esc(g)+'</div>'+list.filter(function(t){return t.group===g}).map(function(t){
+      var hist=(t.history||[]).map(function(h){return '<div class="hist"><div><div class="hm">'+esc(when(h.saved_at))+(h.saved_by?" · "+esc(h.saved_by):"")+'</div><pre>'+esc(h.body)+'</pre></div><button class="ghost" data-rev="'+h.id+'" data-key="'+t.key+'">Put this back</button></div>'}).join("");
+      return '<div class="txt" id="tx-'+t.key+'"><div class="th"><span class="tl">'+esc(t.label)+'</span>'+(t.is_custom?'<span class="tb">edited '+esc(when(t.updated_at))+'</span>':'<span class="tb">original</span>')+'</div>'+
+        '<div class="thelp">'+esc(t.help)+'</div>'+
+        '<textarea id="ta-'+t.key+'" spellcheck="true">'+esc(t.body)+'</textarea>'+
+        '<div class="tact"><button class="send" id="sv-'+t.key+'" data-save="'+t.key+'" disabled>Save</button>'+
+        '<button class="ghost" data-test="'+t.key+'">Text me this</button>'+
+        (t.is_custom?'<button class="ghost" data-reset="'+t.key+'">Back to original</button>':'')+
+        '<span class="tcount" id="tc-'+t.key+'"></span></div>'+
+        '<div class="tmsg" id="tm-'+t.key+'"></div>'+
+        (hist?'<details><summary>History</summary>'+hist+'</details>':'')+'</div>'}).join("")}).join("");
+  list.forEach(function(t){tcount(t.key);document.getElementById("ta-"+t.key).addEventListener("input",function(){tcount(t.key)})});
+}
+function loadTexts(){
+  fetch(API+"api/texts?key="+encodeURIComponent(key)).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok){document.getElementById("tlist").innerHTML='<div class="tempty">Could not load.</div>';return}
+    textsLoaded=true;renderTexts(j.texts||[])
+  }).catch(function(){document.getElementById("tlist").innerHTML='<div class="tempty">Could not load.</div>'})}
+function tpost(path,body){return fetch(API+path+"?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
+document.getElementById("tlist").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  var k=b.getAttribute("data-save")||b.getAttribute("data-test")||b.getAttribute("data-reset")||b.getAttribute("data-key");if(!k)return;
+  var ta=document.getElementById("ta-"+k);
+  if(b.hasAttribute("data-save")){
+    b.disabled=true;tmsg(k,"","Saving.");
+    tpost("api/texts/save",{key:k,body:ta.value,by:"board"}).then(function(j){
+      if(j.ok){tmsg(k,"ok","Saved. Live on the next send.");loadTexts()}
+      else{tmsg(k,"bad",(j.problems||[j.error||"That did not save."]).join("\n"));b.disabled=false}
+    }).catch(function(){tmsg(k,"bad","That did not save. Nothing changed.");b.disabled=false});
+  } else if(b.hasAttribute("data-test")){
+    var who=confirm("Send this draft to Christine's phone? (Cancel sends it to Shep's instead.)")?"christine":"shep";
+    tmsg(k,"","Sending a test.");
+    tpost("api/texts/test",{key:k,body:ta.value,to:who}).then(function(j){
+      if(j.ok)tmsg(k,"ok","Sent to the phone ending "+j.to+". This does not change what men receive.");
+      else tmsg(k,"bad",(j.problems||[j.error||"That did not send."]).join("\n"))
+    }).catch(function(){tmsg(k,"bad","That did not send.")});
+  } else if(b.hasAttribute("data-reset")){
+    if(!confirm("Put the original wording back for this text?"))return;
+    tpost("api/texts/reset",{key:k}).then(function(j){if(j.ok){tmsg(k,"ok","Back to the original.");loadTexts()}else tmsg(k,"bad",j.error||"That did not work.")});
+  } else if(b.hasAttribute("data-rev")){
+    var t=TEXTS[k],h=(t.history||[]).filter(function(x){return String(x.id)===b.getAttribute("data-rev")})[0];
+    if(!h)return;ta.value=h.body;tcount(k);tmsg(k,"","Put back into the box. Read it, then press Save.");ta.focus();
+  }
+});
+
 /* ---------------- tabs ---------------- */
-var TABS={conv:{el:"cols",btn:"t-conv",hash:""},num:{el:"numbers",btn:"t-num",hash:"#numbers"},rec:{el:"recordings",btn:"t-rec",hash:"#recordings"}};
+var TABS={conv:{el:"cols",btn:"t-conv",hash:""},num:{el:"numbers",btn:"t-num",hash:"#numbers"},rec:{el:"recordings",btn:"t-rec",hash:"#recordings"},txt:{el:"texts",btn:"t-txt",hash:"#texts"}};
 function showTab(which){
   Object.keys(TABS).forEach(function(k){
     document.getElementById(TABS[k].el).hidden=(k!==which);
     document.getElementById(TABS[k].btn).setAttribute("aria-selected",String(k===which))});
   if(which==="num"&&!numbersLoaded)loadNumbers();
   if(which==="rec"&&!recLoaded)loadRecordings();
+  if(which==="txt"&&!textsLoaded)loadTexts();
   var h=TABS[which].hash;
   if(h){ if(location.hash!==h)history.replaceState(null,"",h) }
   else if(location.hash){ history.replaceState(null,"",location.pathname+location.search) }
 }
-function tabFromHash(){return location.hash==="#numbers"?"num":location.hash==="#recordings"?"rec":"conv"}
+function tabFromHash(){return location.hash==="#numbers"?"num":location.hash==="#recordings"?"rec":location.hash==="#texts"?"txt":"conv"}
 document.getElementById("t-conv").addEventListener("click",function(){showTab("conv")});
 document.getElementById("t-num").addEventListener("click",function(){showTab("num")});
 document.getElementById("t-rec").addEventListener("click",function(){showTab("rec")});
+document.getElementById("t-txt").addEventListener("click",function(){showTab("txt")});
 window.addEventListener("hashchange",function(){showTab(tabFromHash())});
 
 loadList();
