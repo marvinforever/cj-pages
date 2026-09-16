@@ -26,8 +26,8 @@ button.btn:hover{background:var(--brass)} button.btn:disabled{opacity:.5}
 .err{color:#a33b2c;font-weight:600;font-size:14.5px}
 .hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
 </style></head><body>
-<div class="card" id="card"><p class="eyebrow">The Daily Whisper</p><h1 id="h">One moment.</h1><div id="body"></div><p class="sig">Christine</p>
-<p class="fine">Ten mornings, about ten minutes each, by text. Reply STOP to any of them to opt out.</p></div>
+<div class="card" id="card"><p class="eyebrow" id="eyebrow">The Daily Whisper</p><h1 id="h">One moment.</h1><div id="body"></div><p class="sig" id="sig">Christine</p>
+<p class="fine" id="fine">Ten mornings, about ten minutes each, by text. Reply STOP to any of them to opt out.</p></div>
 <script>
 var q=new URLSearchParams(location.search), s=q.get("s")||"", n=q.get("n")||"";
 var hi=n?"Hey "+n+". ":"";
@@ -35,6 +35,25 @@ var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
 function esc(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 var H=document.getElementById("h"),B=document.getElementById("body");
 var e=q.get("e")||"";
+/* Which series this page is for. ?b=ag is the Ag Sales Playbook; nothing is Christine's. */
+var BK=q.get("b")||"cj", BQ=BK==="cj"?"":"?brand="+encodeURIComponent(BK), KW="DAILY", BRAND=null;
+var COPY={
+  cj:{pitch:"Ten mornings. Ten minutes each.",intro:"A short recording from me each morning, with one thing to do before the day starts. Nothing to attend, nothing to schedule, nothing to catch up on if you miss one. Enter your number, reply YES to my text, and day one arrives right away.",fine:"Ten mornings, about ten minutes each, by text. Reply STOP to any of them to opt out.",sent:"<p>Nothing to attend. Nothing to schedule. Nothing to catch up on if you miss one.</p>"},
+  ag:{pitch:"10 mornings. One play a day.",intro:"A short recording from me each morning with one sales play to run that day, on one real account. About 10 minutes. Nothing to attend, nothing to catch up on if you miss one. Enter your number, reply YES to my text, and day one arrives right away.",fine:"10 mornings, about 10 minutes each, by text. Reply STOP to any of them to opt out.",sent:"<p>One play a day. Run it that day. Nothing to attend, nothing to catch up on if you miss one.</p>"}
+};
+var C=COPY[BK]||COPY.cj;
+function applyBrand(b){
+  BRAND=b; KW=b.keyword||KW;
+  document.getElementById("eyebrow").textContent=b.brand.name; document.title=b.brand.name;
+  document.getElementById("sig").textContent=b.brand.sender_first;
+  document.getElementById("fine").textContent=C.fine;
+  var st=b.brand.style||{};
+  if(st.page_brass){document.documentElement.style.setProperty("--brass",st.page_brass)}
+  if(st.page_brass_bright){document.documentElement.style.setProperty("--brass-bright",st.page_brass_bright)}
+  if(st.page_brass_wash){document.documentElement.style.setProperty("--brass-wash",st.page_brass_wash)}
+  if(st.page_ground){document.documentElement.style.setProperty("--ground",st.page_ground)}
+  document.querySelectorAll("[data-kw]").forEach(function(el){el.textContent=KW});
+}
 function askPhone(intro){
   B.innerHTML='<p>'+intro+'</p>'+
    '<form id="f" autocomplete="on">'+
@@ -43,36 +62,37 @@ function askPhone(intro){
    '<input class="hp" id="website" tabindex="-1" autocomplete="off">'+
    '<button class="btn" id="go">Send me the first one</button>'+
    '<div class="err" id="err"></div></form>'+
-   '<p class="or" id="num">Or text the word <b>DAILY</b> to my number.</p>';
-  fetch(API+"api/public/number").then(function(r){return r.json()}).then(function(j){
-    if(j&&j.ok){document.getElementById("num").innerHTML='Or just text the word <b>DAILY</b> to <span class="phone">'+esc(j.pretty)+'</span> <a class="btn" href="sms:'+esc(j.e164)+'&body=DAILY">Open my messages</a>'}
+   '<p class="or" id="num">Or text the word <b>'+esc(KW)+'</b> to my number.</p>';
+  fetch(API+"api/public/number"+BQ).then(function(r){return r.json()}).then(function(j){
+    if(j&&j.ok){applyBrand(j);document.getElementById("num").innerHTML='Or just text the word <b>'+esc(KW)+'</b> to <span class="phone">'+esc(j.pretty)+'</span> <a class="btn" href="sms:'+esc(j.e164)+'&body='+esc(KW)+'">Open my messages</a>'}
   }).catch(function(){});
   document.getElementById("f").addEventListener("submit",function(ev){
     ev.preventDefault();
     var go=document.getElementById("go"),err=document.getElementById("err");
     go.disabled=true;go.textContent="One moment...";err.textContent="";
     fetch(API+"join-phone",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({first:document.getElementById("first").value,phone:document.getElementById("phone").value,email:e,website:document.getElementById("website").value})})
+      body:JSON.stringify({brand:BK,first:document.getElementById("first").value,phone:document.getElementById("phone").value,email:e,website:document.getElementById("website").value})})
      .then(function(r){return r.json()}).then(function(j){
-        if(j&&j.ok){ var nn=j.first||document.getElementById("first").value.trim(); location.replace("joined.html?s="+encodeURIComponent(j.state||"sent")+(nn?"&n="+encodeURIComponent(nn):"")) }
-        else{ err.textContent=(j&&j.error)||"That didn't go through. Text DAILY instead."; go.disabled=false; go.textContent="Send me the first one" }
-     }).catch(function(){err.textContent="That didn't go through. Text DAILY instead.";go.disabled=false;go.textContent="Send me the first one"});
+        if(j&&j.ok){ var nn=j.first||document.getElementById("first").value.trim(); location.replace("joined.html?s="+encodeURIComponent(j.state||"sent")+(BK!=="cj"?"&b="+encodeURIComponent(BK):"")+(nn?"&n="+encodeURIComponent(nn):"")) }
+        else{ err.textContent=(j&&j.error)||("That didn't go through. Text "+KW+" instead."); go.disabled=false; go.textContent="Send me the first one" }
+     }).catch(function(){err.textContent="That didn't go through. Text "+KW+" instead.";go.disabled=false;go.textContent="Send me the first one"});
   });
 }
 function fallback(intro){
-  B.innerHTML='<p>'+intro+'</p><p id="num">Text the word <b>DAILY</b> to my number and you are in.</p>';
-  fetch(API+"api/public/number").then(function(r){return r.json()}).then(function(j){
-    if(j&&j.ok){document.getElementById("num").innerHTML='Text the word <b>DAILY</b> to <span class="phone">'+esc(j.pretty)+'</span><br><a class="btn" href="sms:'+esc(j.e164)+'&body=DAILY">Open my messages</a>'}
+  B.innerHTML='<p>'+intro+'</p><p id="num">Text the word <b>'+esc(KW)+'</b> to my number and you are in.</p>';
+  fetch(API+"api/public/number"+BQ).then(function(r){return r.json()}).then(function(j){
+    if(j&&j.ok){applyBrand(j);document.getElementById("num").innerHTML='Text the word <b>'+esc(KW)+'</b> to <span class="phone">'+esc(j.pretty)+'</span><br><a class="btn" href="sms:'+esc(j.e164)+'&body='+esc(KW)+'">Open my messages</a>'}
   }).catch(function(){})}
+if(BK!=="cj"){fetch(API+"api/public/number"+BQ).then(function(r){return r.json()}).then(function(j){if(j&&j.ok)applyBrand(j)}).catch(function(){})}
 switch(s){
-  case "sent": H.textContent=hi?"Check your phone, "+n+".":"Check your phone."; B.innerHTML="<p>I just sent you a text. Reply <b>YES</b> to it and day one arrives right away.</p><p>Nothing to attend. Nothing to schedule. Nothing to catch up on if you miss one.</p>"; break;
+  case "sent": H.textContent=hi?"Check your phone, "+n+".":"Check your phone."; B.innerHTML="<p>I just sent you a text. Reply <b>YES</b> to it and day one arrives right away.</p>"+C.sent; break;
   case "queued": H.textContent="You're on the list."; B.innerHTML="<p>"+esc(hi)+"It's a little early or a little late where you are, so my text will reach you at 7:30 your time. Reply <b>YES</b> to it and day one arrives right away.</p>"; break;
   case "invited": H.textContent="Look for my text."; B.innerHTML="<p>"+esc(hi)+"I already sent you one. Find it and reply <b>YES</b>, and day one arrives right away.</p>"; break;
   case "already": H.textContent=hi?"You're already in, "+n+".":"You're already in."; B.innerHTML="<p>Your next morning is on its way. Nothing else to do.</p>"; break;
   case "optedout": H.textContent="You stepped away earlier."; fallback("No hard feelings. If you want back in, it takes one text."); break;
   case "nophone": H.textContent=n?"One more thing, "+n+".":"One more thing."; askPhone("The mornings arrive by text, so I need a mobile number."); break;
   case "nocontact": H.textContent="Let's do this the simple way."; fallback("That link didn't carry your details."); break;
-  case "": H.textContent="Ten mornings. Ten minutes each."; askPhone("A short recording from me each morning, with one thing to do before the day starts. Nothing to attend, nothing to schedule, nothing to catch up on if you miss one. Enter your number, reply YES to my text, and day one arrives right away."); break;
+  case "": H.textContent=C.pitch; askPhone(C.intro); break;
   case "needphone": H.textContent=n?"One more thing, "+n+".":"One more thing."; askPhone("The mornings arrive by text, so I need a mobile number. You'll get one text asking you to reply YES, and day one arrives right away."); break;
   default: H.textContent="Something didn't connect."; fallback("Not your fault. The simple way always works:");
 }

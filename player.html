@@ -57,6 +57,25 @@
   try { x.send(); window.CJ = JSON.parse(x.responseText); } catch (e) {}
 })();
 </script>
+<script>
+// The page wears the brand the link belongs to (2026-09-16). Christine's is
+// the built-in look; another brand's colours, type and names arrive with the
+// config and are applied before first paint.
+(function () {
+  var b = window.CJ && window.CJ.brand; if (!b) return;
+  window.BRAND = b;
+  var st = b.style || {}, r = document.documentElement.style;
+  ["bg","bg2","ink","ink-dim","ink-faint","gold","gold-2","gold-deep","line","serif","sans"].forEach(function (k) { if (st[k]) r.setProperty("--" + k, st[k]); });
+  if (st.fonts) { var l = document.createElement("link"); l.rel = "stylesheet"; l.href = st.fonts; document.head.appendChild(l); }
+  if (st.bg) { var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", st.bg); }
+  document.addEventListener("DOMContentLoaded", function () {
+    var mono = document.querySelector(".monogram"); if (mono) mono.textContent = b.initials || mono.textContent;
+    var wm = document.querySelector(".wordmark"); if (wm) wm.textContent = b.sender || wm.textContent;
+    document.querySelectorAll("[data-brand-name]").forEach(function (el) { el.textContent = b.name; });
+    var cta = document.getElementById("optin-cta"); if (cta) { cta.textContent = "Get " + b.name.replace(/^The /, "the "); }
+  });
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -300,7 +319,7 @@
 
     <!-- expired state -->
     <section id="view-expired" hidden>
-      <p class="eyebrow"><span class="rule"></span><span>The Daily Whisper</span><span class="rule"></span></p>
+      <p class="eyebrow"><span class="rule"></span><span data-brand-name>The Daily Whisper</span><span class="rule"></span></p>
       <h1 class="x-title">This link has expired.</h1>
       <p class="x-sub">Each day's track opens from its own personal link, and this one has finished its run. The series itself is still open to you.</p>
       <a class="cta" id="optin-cta" href="https://go.thechristinejewell.com">Get the Daily Whisper</a>
@@ -346,7 +365,7 @@
 
   document.getElementById("eyebrow-text").textContent = "Day " + day + " of " + totalDays;
   document.getElementById("episode-title").textContent = CJ.episodeTitle || "Today's Track";
-  document.title = "Day " + day + " · Christine Jewell";
+  document.title = "Day " + day + " · " + ((window.BRAND && window.BRAND.sender) || "Christine Jewell");
 
   var dots = document.getElementById("daydots");
   for (var i = 1; i <= totalDays; i++) {
@@ -510,8 +529,8 @@
   if ("mediaSession" in navigator) {
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: CJ.episodeTitle || "The Daily Whisper",
-        artist: "Christine Jewell",
+        title: CJ.episodeTitle || ((window.BRAND && window.BRAND.name) || "The Daily Whisper"),
+        artist: (window.BRAND && window.BRAND.sender) || "Christine Jewell",
         album: "Day " + day + " of " + totalDays
       });
       navigator.mediaSession.setActionHandler("play", function () { btn.click(); });
