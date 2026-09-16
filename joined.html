@@ -52,6 +52,7 @@ function applyBrand(b){
   if(st.page_brass_bright){document.documentElement.style.setProperty("--brass-bright",st.page_brass_bright)}
   if(st.page_brass_wash){document.documentElement.style.setProperty("--brass-wash",st.page_brass_wash)}
   if(st.page_ground){document.documentElement.style.setProperty("--ground",st.page_ground)}
+  ["surface","ink","ink_soft","rule","muted"].forEach(function(k){ if(st["page_"+k]){document.documentElement.style.setProperty("--"+k.replace("_","-"),st["page_"+k])} });
   document.querySelectorAll("[data-kw]").forEach(function(el){el.textContent=KW});
 }
 function askPhone(intro){
