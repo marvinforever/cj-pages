@@ -253,8 +253,8 @@ td.msg i{color:var(--muted)}
       <div class="shead"><h2>Drop a new take</h2><span class="snote">it goes live the moment it lands</span></div>
       <label class="drop" id="drop">
         <b>Drag a recording here, or tap to choose one</b>
-        Name it the way you already do, like <span class="mono">3. Are you ALL IN? Presence is Power.m4a</span>, and it files itself to that morning. Re-dropping a morning replaces it.
-        <small>m4a, mp3, or wav. Christine and Shep get a text when it lands.</small>
+        Name it with the morning number first, like <span class="mono">3. Are you ALL IN.m4a</span>, and it files itself to that morning. Re-dropping a morning replaces it.
+        <small>m4a, mp3, or wav. <span id="drop-who">The owner</span> and Shep get a text when it lands.</small>
         <input type="file" id="file" accept="audio/*,.m4a,.mp3,.wav,.mp4">
       </label>
       <div class="daypick" id="daypick">
@@ -302,9 +302,12 @@ var key=qs.get("key")||"";
 var brand=qs.get("b")||(function(){try{return localStorage.getItem("cj_brand")||""}catch(e){return ""}})();
 var BRANDS=[];
 function Q(){return "key="+encodeURIComponent(key)+(brand?"&brand="+encodeURIComponent(brand):"")}
+var SENDER="the owner";
 function applyBrand(b){
   document.getElementById("h1").textContent=(b.short_name||b.name)+" Board";
   document.title=(b.short_name||b.name)+" Board";
+  SENDER=b.sender_first||"the owner";
+  document.getElementById("drop-who").textContent=SENDER;
 }
 function loadBrands(){
   return fetch(API+"api/brands?"+Q()).then(function(r){return r.json()}).then(function(j){
@@ -627,7 +630,7 @@ document.getElementById("tlist").addEventListener("click",function(e){
       else{tmsg(k,"bad",(j.problems||[j.error||"That did not save."]).join("\n"));b.disabled=false}
     }).catch(function(){tmsg(k,"bad","That did not save. Nothing changed.");b.disabled=false});
   } else if(b.hasAttribute("data-test")){
-    var who=confirm("Send this draft to Christine's phone? (Cancel sends it to Shep's instead.)")?"christine":"shep";
+    var who=confirm("Send this draft to "+SENDER+"'s phone? (Cancel sends it to Shep's instead.)")?"owner":"shep";
     tmsg(k,"","Sending a test.");
     tpost("api/texts/test",{key:k,body:ta.value,to:who}).then(function(j){
       if(j.ok)tmsg(k,"ok","Sent to the phone ending "+j.to+". This does not change what men receive.");
