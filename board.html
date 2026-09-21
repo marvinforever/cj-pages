@@ -51,15 +51,22 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
   .cols.viewing .list{display:none} .cols:not(.viewing) .pane{display:none}}
 
 .list{border-right:1px solid var(--rule);overflow-y:auto;background:var(--surface-2)}
-.filters{display:flex;gap:6px;padding:10px 12px;position:sticky;top:0;background:var(--surface-2);
+.filters{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;position:sticky;top:0;background:var(--surface-2);
   border-bottom:1px solid var(--rule-soft);z-index:2}
 .fbtn{flex:none;background:none;border:1px solid transparent;border-radius:99px;padding:5px 12px;
   font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
 .fbtn[aria-pressed="true"]{background:var(--brass-wash);color:var(--brass);border-color:var(--brass-bright)}
+.fbtn .fct{font-family:"IBM Plex Mono",monospace;font-size:11px;opacity:.72;margin-left:3px;font-variant-numeric:tabular-nums}
 .row{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--rule-soft);
   padding:13px 15px;cursor:pointer;font:inherit;color:inherit}
 .row:hover{background:var(--surface)}
-.row[aria-current="true"]{background:var(--surface);box-shadow:inset 3px 0 0 var(--brass-bright)}
+.row.waiting{background:var(--alarm-wash);box-shadow:inset 3px 0 0 var(--alarm)}
+.row.waiting:hover{background:var(--alarm-wash)}
+.row.waiting .rname{font-weight:700}
+.row[aria-current="true"]{background:var(--brass-wash);box-shadow:inset 5px 0 0 var(--brass-bright)}
+.row[aria-current="true"]:hover{background:var(--brass-wash)}
+.row.waiting[aria-current="true"],.row.waiting[aria-current="true"]:hover{background:var(--alarm-wash);
+  box-shadow:inset 5px 0 0 var(--brass-bright),inset 8px 0 0 var(--alarm)}
 .row.test{opacity:.5}
 .rtop{display:flex;align-items:baseline;gap:8px}
 .rname{font-family:Fraunces,Georgia,serif;font-size:16.5px;font-weight:600}
@@ -227,9 +234,12 @@ td.msg i{color:var(--muted)}
   </header>
   <div class="cols" id="cols">
     <div class="list">
-      <div class="filters">
-        <button class="fbtn" id="f-all" aria-pressed="true">Everyone</button>
-        <button class="fbtn" id="f-you" aria-pressed="false">Needs you</button>
+      <div class="filters" id="filters">
+        <button class="fbtn" data-f="all" aria-pressed="true">Everyone</button>
+        <button class="fbtn" data-f="you" aria-pressed="false">Waiting on You</button>
+        <button class="fbtn" data-f="sent" aria-pressed="false">Response Sent</button>
+        <button class="fbtn" data-f="them" aria-pressed="false">Waiting on Them</button>
+        <button class="fbtn" data-f="none" aria-pressed="false">No Response</button>
       </div>
       <div id="rows"></div>
     </div>
@@ -336,7 +346,7 @@ document.getElementById("brandpick").addEventListener("change",function(){
 // Our own +1555 lines are hidden by default. Add &tests=1 to the link to see them.
 var showTests=qs.get("tests")==="1";
 var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
-var current=null, threads=[], filterYou=false, typing=false;
+var current=null, threads=[], filter="all", typing=false;
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function when(iso){var d=new Date(iso),diff=(Date.now()-d)/60000;
   if(diff<1)return"just now"; if(diff<60)return Math.round(diff)+"m";
@@ -355,19 +365,50 @@ var VOICE={drip:"sent by the series",welcome:"sent by the series",invite:"sent b
   stop_confirm:"opt-out confirmation",crisis_ack:"the crisis message",
   conversational:"written by the assistant",invitation:"written by the assistant",
   human:"written by you",stalled_nudge:"written by the assistant"};
+/* Which of the four groups a thread is in. First line that fits wins, so
+   every thread lands in exactly one. */
+var SENT_KINDS={human:1,conversational:1,invitation:1,stalled_nudge:1,identity:1,build_reply:1,done_reply:1};
+function statusOf(t){
+  /* needs_her is the board's own flag, the one behind the red tag and the
+     counter in the header. Including it keeps all three in agreement, and
+     catches a man who said BUILD and is waiting on her to book him. */
+  if(t.crisis||t.last_dir==="inbound"||t.needs_her)return "you";
+  if(t.pending_invite||!t.replies)return "none";
+  if(SENT_KINDS[t.last_kind])return "sent";
+  return "them";
+}
+var FILTER_LABEL={all:"Everyone",you:"Waiting on You",sent:"Response Sent",them:"Waiting on Them",none:"No Response"};
+var STATUS_TAG={sent:"response sent",them:"waiting on them",none:"no response"};
+function renderCounts(counts){
+  var btns=document.getElementById("filters").getElementsByClassName("fbtn");
+  for(var i=0;i<btns.length;i++){
+    var f=btns[i].getAttribute("data-f");
+    var n=(f==="all")?threads.length:(counts[f]||0);
+    btns[i].innerHTML=esc(FILTER_LABEL[f])+' <span class="fct">'+n+'</span>';
+    btns[i].setAttribute("aria-pressed",String(filter===f));
+  }
+}
 function renderRows(){
   var el=document.getElementById("rows");
-  var list=threads.filter(function(t){return !filterYou||t.needs_her});
+  var counts={you:0,sent:0,them:0,none:0};
+  var marked=threads.map(function(t){var st=statusOf(t);counts[st]=(counts[st]||0)+1;return{t:t,st:st}});
+  renderCounts(counts);
+  var picked=marked.filter(function(m){return filter==="all"||m.st===filter});
+  /* pull the ones waiting on her to the top, keeping the server's order inside each group */
+  var list=picked.filter(function(m){return m.st==="you"})
+           .concat(picked.filter(function(m){return m.st!=="you"}));
   if(!list.length){el.innerHTML='<div class="empty">Nothing here yet.</div>';return}
-  el.innerHTML=list.map(function(t){
+  el.innerHTML=list.map(function(m){
+    var t=m.t, st=m.st;
     var tags=[];
     if(t.crisis)tags.push('<span class="tag crisis">crisis</span>');
     else if(t.needs_her)tags.push('<span class="tag you">needs you</span>');
+    if(st!=="you")tags.push('<span class="tag">'+STATUS_TAG[st]+'</span>');
     if(t.built)tags.push('<span class="tag build">BUILD</span>');
     if(t.dones)tags.push('<span class="tag">'+t.dones+' done</span>');
     if(t.score_open!=null)tags.push('<span class="tag">'+t.score_open+(t.score_close!=null?" to "+t.score_close:"")+'</span>');
     if(t.test)tags.push('<span class="tag">test</span>');
-    return '<button class="row'+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
+    return '<button class="row'+(st==="you"?' waiting':'')+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
       '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
       '<span class="rday">'+(t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
       '<div class="rprev">'+(t.pending_invite?'<i style="color:var(--muted)">first text goes out at 7:30 his time</i>':(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under her name")+": </b>":"<b>him: </b>")+esc((t.last_body||"").slice(0,90)))+'</div>'+
@@ -449,10 +490,9 @@ document.getElementById("rows").addEventListener("click",function(e){
   var b=e.target.closest?e.target.closest(".row"):null; if(b)loadThread(b.getAttribute("data-id"))});
 document.getElementById("back").addEventListener("click",function(){
   document.getElementById("cols").classList.remove("viewing")});
-document.getElementById("f-all").addEventListener("click",function(){filterYou=false;
-  this.setAttribute("aria-pressed","true");document.getElementById("f-you").setAttribute("aria-pressed","false");renderRows()});
-document.getElementById("f-you").addEventListener("click",function(){filterYou=true;
-  this.setAttribute("aria-pressed","true");document.getElementById("f-all").setAttribute("aria-pressed","false");renderRows()});
+document.getElementById("filters").addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest(".fbtn"):null; if(!b)return;
+  filter=b.getAttribute("data-f")||"all"; renderRows()});
 var ta=document.getElementById("reply"),send=document.getElementById("send");
 ta.addEventListener("input",function(){var n=this.value.trim().length;typing=n>0;
   var c=document.getElementById("count");c.textContent=n+" / 600";c.className="count"+(n>600?" over":"");
