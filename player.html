@@ -367,12 +367,14 @@
   var totalDays = CJ.totalDays || 10;
   var day       = Math.min(Math.max(CJ.day || 1, 1), totalDays);
 
-  document.getElementById("eyebrow-text").textContent = "Day " + day + " of " + totalDays;
+  var dayLabel  = (window.BRAND && window.BRAND.style && window.BRAND.style.day_label) || "";
+  document.getElementById("eyebrow-text").textContent = dayLabel || ("Day " + day + " of " + totalDays);
   document.getElementById("episode-title").textContent = CJ.episodeTitle || "Today's Track";
-  document.title = "Day " + day + " · " + ((window.BRAND && window.BRAND.sender) || "Christine Jewell");
+  document.title = (dayLabel || ("Day " + day)) + " · " + ((window.BRAND && window.BRAND.sender) || "Christine Jewell");
 
   var dots = document.getElementById("daydots");
-  for (var i = 1; i <= totalDays; i++) {
+  if (dayLabel) dots.hidden = true;
+  for (var i = 1; !dayLabel && i <= totalDays; i++) {
     var d = document.createElement("i");
     if (i < day) d.className = "done";
     else if (i === day) d.className = "now";
@@ -535,7 +537,7 @@
       navigator.mediaSession.metadata = new MediaMetadata({
         title: CJ.episodeTitle || ((window.BRAND && window.BRAND.name) || "The Daily Whisper"),
         artist: (window.BRAND && window.BRAND.sender) || "Christine Jewell",
-        album: "Day " + day + " of " + totalDays
+        album: dayLabel || ("Day " + day + " of " + totalDays)
       });
       navigator.mediaSession.setActionHandler("play", function () { btn.click(); });
       navigator.mediaSession.setActionHandler("pause", function () { audio.pause(); });
