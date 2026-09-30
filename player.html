@@ -50,11 +50,15 @@
 // on static hosting and fetches its config by token from the funnel service.
 (function () {
   if (window.CJ) return;
-  var t = (location.hash || "").replace(/^#t=/, "");
-  if (!t) return; // no token -> page's built-in expired state
-  var x = new XMLHttpRequest();
-  x.open("GET", "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/api/player-config?token=" + encodeURIComponent(t), false);
-  try { x.send(); window.CJ = JSON.parse(x.responseText); } catch (e) {}
+  var m = location.hash.match(/t=([A-Za-z0-9]+)/) || location.search.match(/[?&]t=([A-Za-z0-9]+)/) || location.pathname.match(/\/d\/([A-Za-z0-9]+)/);
+  if (!m) return; // no token -> page's built-in expired state
+  var url = "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/api/player-config?token=" + encodeURIComponent(m[1]);
+  // A network blip must never read as an expired link (2026-09-30): try twice,
+  // then show a try-again state instead.
+  for (var i = 0; i < 2 && !window.CJ; i++) {
+    try { var x = new XMLHttpRequest(); x.open("GET", url, false); x.send(); if (x.status === 200) window.CJ = JSON.parse(x.responseText); } catch (e) {}
+  }
+  if (!window.CJ) window.CJ = { loadError: true };
 })();
 </script>
 <script>
@@ -349,6 +353,16 @@
 
   var viewPlayer  = document.getElementById("view-player");
   var viewExpired = document.getElementById("view-expired");
+
+  if (CJ && CJ.loadError) {
+    viewExpired.querySelector(".x-title").textContent = "This one didn't load.";
+    viewExpired.querySelector(".x-sub").textContent = "Your link is still good. Check your signal and tap below to try again.";
+    var retry = document.getElementById("optin-cta"); retry.textContent = "Try again"; retry.href = location.href;
+    retry.addEventListener("click", function (e) { e.preventDefault(); location.reload(); });
+    var under = viewExpired.querySelector(".x-under"); if (under) under.hidden = true;
+    viewExpired.hidden = false;
+    return;
+  }
 
   if (!CJ || CJ.expired || !CJ.audioUrl || !CJ.token) {
     if (CJ && CJ.optInUrl) document.getElementById("optin-cta").href = CJ.optInUrl;
