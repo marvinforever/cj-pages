@@ -1,5 +1,8 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Daily Whisper</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap">
@@ -16,6 +19,7 @@ p{margin:0 0 12px;color:var(--ink-soft)}
 a.btn{display:inline-block;margin-top:8px;background:var(--brass-bright);color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px}
 a.btn:hover{background:var(--brass)}
 .sig{font-family:Fraunces,Georgia,serif;margin-top:22px;color:var(--ink)}
+.tag{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5;max-width:420px}
 .fine{font-size:13px;color:var(--muted);margin-top:18px;border-top:1px solid var(--rule);padding-top:14px}
 form{display:grid;gap:10px;margin:14px 0 6px}
 input{width:100%;padding:12px 13px;border:1px solid var(--rule);border-radius:10px;font:inherit;font-size:16px;background:var(--surface);color:var(--ink)}
@@ -26,8 +30,9 @@ button.btn:hover{background:var(--brass)} button.btn:disabled{opacity:.5}
 .err{color:#a33b2c;font-weight:600;font-size:14.5px}
 .hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
 </style></head><body>
-<div class="card" id="card"><p class="eyebrow" id="eyebrow">The Daily Whisper</p><h1 id="h">One moment.</h1><div id="body"></div><p class="sig" id="sig">Christine</p>
-<p class="fine" id="fine">Ten mornings, about ten minutes each, by text. Reply STOP to any of them to opt out.</p></div>
+<div class="card" id="card"><p class="eyebrow" id="eyebrow">The Daily Whisper</p><h1 id="h">Ten mornings. Ten minutes. Peace before the noise starts.</h1><div id="body"><p>You don't need one thing added to your calendar. You simply need ten minutes before the world gets a vote — a short and powerful message, straight to your phone to shift your vantage point and bring you greater clarity at the top of your day.</p><p>For the man building something real: a business worth running, and a marriage worth coming home to.</p><p>Nothing to attend. Nothing to schedule. Integrates seamlessly into your day and meets you where you're at. Enter your number, reply YES to my text, and day one arrives right away.</p><form id="f" autocomplete="on"><input id="first" placeholder="First name" value="" autocomplete="given-name"><input id="phone" type="tel" placeholder="Mobile number" autocomplete="tel" required><input class="hp" id="website" tabindex="-1" autocomplete="off"><button class="btn" id="go">Send Me Day One</button><div class="err" id="err"></div></form><p class="or" id="num">Or just text the word <b>DAILY</b> to <span class="phone">(919) 823-5952</span> <a class="btn" href="sms:+19198235952&body=DAILY">Open my messages</a></p></div><p class="sig" id="sig">Christine</p>
+<p class="tag" id="tag">Private counsel to founders and business owners building the richest season of their lives — at home and at work.</p>
+<p class="fine" id="fine">Ten mornings, about ten minutes each, by text. Reply STOP any time.</p></div>
 <script>
 var q=new URLSearchParams(location.search), s=q.get("s")||"", n=q.get("n")||"";
 var hi=n?"Hey "+n+". ":"";
@@ -38,10 +43,12 @@ var e=q.get("e")||"";
 /* Which series this page is for. ?b=ag is the Ag Sales Playbook; nothing is Christine's. */
 var BK=q.get("b")||"cj", BQ=BK==="cj"?"":"?brand="+encodeURIComponent(BK), KW="DAILY", BRAND=null;
 var COPY={
-  cj:{pitch:"Ten mornings. Ten minutes each.",intro:"A short recording from me each morning, with one thing to do before the day starts. Nothing to attend, nothing to schedule, nothing to catch up on if you miss one. Enter your number, reply YES to my text, and day one arrives right away.",fine:"Ten mornings, about ten minutes each, by text. Reply STOP to any of them to opt out.",sent:"<p>Nothing to attend. Nothing to schedule. Nothing to catch up on if you miss one.</p>"},
+  cj:{pitch:"Ten mornings. Ten minutes. Peace before the noise starts.",intro:"You don't need one thing added to your calendar. You simply need ten minutes before the world gets a vote — a short and powerful message, straight to your phone to shift your vantage point and bring you greater clarity at the top of your day.</p><p>For the man building something real: a business worth running, and a marriage worth coming home to.</p><p>Nothing to attend. Nothing to schedule. Integrates seamlessly into your day and meets you where you're at. Enter your number, reply YES to my text, and day one arrives right away.",fine:"Ten mornings, about ten minutes each, by text. Reply STOP any time.",sent:"<p>You're in. No app, nothing to remember — just look for my name in your texts each morning.</p>"},
   ag:{pitch:"One new play a day.",intro:"Short audio from me with one new sales play to run that day, on a real account. Listen whenever it suits you. Nothing to attend, nothing to catch up on if you miss one. Enter your number, reply YES to my text, and your first play arrives right away.",fine:"Short audio plays by text, one each workday. Reply STOP to any of them to opt out.",sent:"<p>One new play a day. Run it that day. Nothing to attend, nothing to catch up on if you miss one.</p>"}
 };
 var C=COPY[BK]||COPY.cj;
+var BTN=BK==="cj"?"Send Me Day One":"Send me the first one";
+if(BK!=="cj"){var tg=document.getElementById("tag");if(tg)tg.remove()}
 function applyBrand(b){
   BRAND=b; KW=b.keyword||KW;
   document.getElementById("eyebrow").textContent=b.brand.name; document.title=b.brand.name;
@@ -61,7 +68,7 @@ function askPhone(intro){
    '<input id="first" placeholder="First name" value="'+esc(n)+'" autocomplete="given-name">'+
    '<input id="phone" type="tel" placeholder="Mobile number" autocomplete="tel" required>'+
    '<input class="hp" id="website" tabindex="-1" autocomplete="off">'+
-   '<button class="btn" id="go">Send me the first one</button>'+
+   '<button class="btn" id="go">'+BTN+'</button>'+
    '<div class="err" id="err"></div></form>'+
    '<p class="or" id="num">Or text the word <b>'+esc(KW)+'</b> to my number.</p>';
   fetch(API+"api/public/number"+BQ).then(function(r){return r.json()}).then(function(j){
@@ -75,8 +82,8 @@ function askPhone(intro){
       body:JSON.stringify({brand:BK,first:document.getElementById("first").value,phone:document.getElementById("phone").value,email:e,website:document.getElementById("website").value})})
      .then(function(r){return r.json()}).then(function(j){
         if(j&&j.ok){ var nn=j.first||document.getElementById("first").value.trim(); location.replace("joined.html?s="+encodeURIComponent(j.state||"sent")+(BK!=="cj"?"&b="+encodeURIComponent(BK):"")+(nn?"&n="+encodeURIComponent(nn):"")) }
-        else{ err.textContent=(j&&j.error)||("That didn't go through. Text "+KW+" instead."); go.disabled=false; go.textContent="Send me the first one" }
-     }).catch(function(){err.textContent="That didn't go through. Text "+KW+" instead.";go.disabled=false;go.textContent="Send me the first one"});
+        else{ err.textContent=(j&&j.error)||("That didn't go through. Text "+KW+" instead."); go.disabled=false; go.textContent=BTN }
+     }).catch(function(){err.textContent="That didn't go through. Text "+KW+" instead.";go.disabled=false;go.textContent=BTN});
   });
 }
 function fallback(intro){
@@ -97,4 +104,5 @@ switch(s){
   case "needphone": H.textContent=n?"One more thing, "+n+".":"One more thing."; askPhone("The mornings arrive by text, so I need a mobile number. You'll get one text asking you to reply YES, and day one arrives right away."); break;
   default: H.textContent="Something didn't connect."; fallback("Not your fault. The simple way always works:");
 }
-</script></body></html>
+</script>
+</body></html>
