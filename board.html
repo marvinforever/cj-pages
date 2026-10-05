@@ -251,7 +251,7 @@ td.msg i{color:var(--muted)}
         <textarea id="reply" placeholder="Write to him yourself. It goes out from your number, exactly as you type it." maxlength="700"></textarea>
         <div class="crow">
           <button class="send" id="send" disabled>Send</button>
-          <span class="hint">He gets this from you. The assistant stays quiet on this thread for a day.</span>
+          <span class="hint" id="replyhint">He gets this from you. The assistant stays quiet on this thread for a day.</span>
           <span class="count" id="count">0 / 600</span>
         </div>
         <div id="flash"></div>
@@ -281,7 +281,7 @@ td.msg i{color:var(--muted)}
     </section>
   </div>
   <div class="numbers" id="texts" role="tabpanel" hidden>
-    <div class="tguide"><b>Every text a man receives, in your words.</b> Change any of them here and it is live on the next send. Words in curly braces, like <span class="mono">{link}</span>, are filled in for each man and have to stay. <b>Text me this</b> sends the draft to your own phone first, so you can read it the way he will. Every earlier version is kept under History.</div>
+    <div class="tguide" id="tguide"><b>Every text a man receives, in your words.</b> Change any of them here and it is live on the next send. Words in curly braces, like <span class="mono">{link}</span>, are filled in for each man and have to stay. <b>Text me this</b> sends the draft to your own phone first, so you can read it the way he will. Every earlier version is kept under History.</div>
     <div id="tlist"><div class="tempty">Loading.</div></div>
   </div>
   <div class="numbers" id="numbers" role="tabpanel" hidden>
@@ -290,14 +290,14 @@ td.msg i{color:var(--muted)}
       <div class="cards" id="cards"><div class="tempty">Loading the numbers.</div></div>
     </section>
     <section class="sect">
-      <div class="shead"><h2>Every man</h2><span class="snote" id="tnote"></span></div>
+      <div class="shead"><h2 id="everyone">Every man</h2><span class="snote" id="tnote"></span></div>
       <div class="toolbar">
         <input class="search" id="q" type="search" placeholder="Search a name or his last message" aria-label="Search">
         <div id="chips"></div>
       </div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Man</th><th>Morning</th><th>Listened</th><th>Replies</th><th>Last from him</th><th>Where he stands</th></tr></thead>
+          <thead><tr><th id="th-who">Man</th><th>Morning</th><th>Listened</th><th>Replies</th><th id="th-last">Last from him</th><th id="th-where">Where he stands</th></tr></thead>
           <tbody id="tbody"><tr><td colspan="6" class="tempty">Loading.</td></tr></tbody>
         </table>
       </div>
@@ -313,10 +313,30 @@ var brand=qs.get("b")||(function(){try{return localStorage.getItem("cj_brand")||
 var BRANDS=[];
 function Q(){return "key="+encodeURIComponent(key)+(brand?"&brand="+encodeURIComponent(brand):"")}
 var SENDER="the owner";
+/* Who the series is for (2026-10-06): Christine's brand is for men
+   (style.audience "men"); every other brand, the Ag Sales Playbook
+   included, talks about people, not men. */
+var MEN=false;
+function W(men,anyone){return MEN?men:anyone}
+function applyWords(){
+  var set=function(id,prop,val){var e=document.getElementById(id);if(e)e[prop]=val};
+  set("reply","placeholder",W("Write to him yourself.","Write to them yourself.")+" It goes out from your number, exactly as you type it.");
+  set("replyhint","textContent",W("He gets","They get")+" this from you. The assistant stays quiet on this thread for a day.");
+  set("tguide","innerHTML","<b>Every text "+W("a man receives","someone receives")+", in your words.</b> Change any of them here and it is live on the next send. Words in curly braces, like <span class=\"mono\">{link}</span>, are filled in for each "+W("man","person")+" and have to stay. <b>Text me this</b> sends the draft to your own phone first, so you can read it the way "+W("he","they")+" will. Every earlier version is kept under History.");
+  set("everyone","textContent",W("Every man","Everyone"));
+  set("q","placeholder","Search a name or "+W("his","their")+" last message");
+  set("th-who","textContent",W("Man","Name"));
+  set("th-last","textContent",W("Last from him","Last from them"));
+  set("th-where","textContent",W("Where he stands","Where they stand"));
+  SHORT.build_reply=SENDER+"'s calendar";
+  VOICE.build_reply=SENDER+"'s calendar, sent automatically";
+}
 function applyBrand(b){
   document.getElementById("h1").textContent=(b.short_name||b.name)+" Board";
   document.title=(b.short_name||b.name)+" Board";
   SENDER=b.sender_first||"the owner";
+  MEN=!!(b.style&&b.style.audience==="men");
+  applyWords();
   document.getElementById("drop-who").textContent=SENDER;
 }
 function loadBrands(){
@@ -411,7 +431,7 @@ function renderRows(){
     return '<button class="row'+(st==="you"?' waiting':'')+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
       '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
       '<span class="rday">'+(t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
-      '<div class="rprev">'+(t.pending_invite?'<i style="color:var(--muted)">first text goes out at 7:30 his time</i>':(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under her name")+": </b>":"<b>him: </b>")+esc((t.last_body||"").slice(0,90)))+'</div>'+
+      '<div class="rprev">'+(t.pending_invite?'<i style="color:var(--muted)">first text goes out at 7:30 '+W("his","their")+' time</i>':(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under "+SENDER+"'s name")+": </b>":"<b>"+W("him","them")+": </b>")+esc((t.last_body||"").slice(0,90)))+'</div>'+
       (tags.length?'<div class="rtags">'+tags.join("")+'</div>':'')+'</button>'}).join("")}
 function loadList(){
   fetch(API+"api/feed?"+Q()+(showTests?"&tests=1":"")).then(function(r){return r.json()}).then(function(j){
@@ -420,7 +440,7 @@ function loadList(){
     var n=threads.filter(function(t){return t.needs_her}).length;
     var inSeries=threads.filter(function(t){return t.consented}).length;
     var waiting=threads.length-inSeries;
-    var bits=[inSeries+(inSeries===1?" man in the series":" men in the series")];
+    var bits=[inSeries+(inSeries===1?W(" man in the series"," person in the series"):W(" men in the series"," people in the series"))];
     if(waiting)bits.push(waiting+(waiting===1?" invited, waiting":" invited, waiting"));
     bits.push(n?n+" need you":"nobody waiting on you");
     document.getElementById("live").innerHTML='<span class="dot"></span>'+bits.join(" &middot; ");
@@ -439,7 +459,7 @@ function loadThread(id){
     document.getElementById("pmeta").textContent=bits.join(" · ");
     var last="";
     document.getElementById("msgs").innerHTML=t.messages.map(function(m){
-      var label=m.dir==="in"?"him":(VOICE[m.kind]||"sent under her name");
+      var label=m.dir==="in"?W("him","them"):(VOICE[m.kind]||"sent under "+SENDER+"'s name");
       var head="";
       if(label!==last){head='<div class="who '+(m.dir==="in"?"in":"out")+(m.kind==="human"?" hand":"")+'">'+esc(label)+'</div>';last=label}
       return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'}).join("");
@@ -534,7 +554,7 @@ function renderCohort(c){
   document.getElementById("cards").innerHTML=
     card("In the series",fmtInt(c.in_series),"said yes and are getting mornings"," key")+
     card("Invited, waiting",fmtInt(c.waiting_on_yes),"first text sent, no yes back yet")+
-    card("Came in this week",fmtInt(c.optins&&c.optins.week),fmtInt(c.optins&&c.optins.total)+" men in the funnel all told")+
+    card("Came in this week",fmtInt(c.optins&&c.optins.week),fmtInt(c.optins&&c.optins.total)+W(" men"," people")+" in the funnel all told")+
     card("Listen-through",fmtInt(c.avg_listen_through_pct)+'<span class="unit">%</span>',"average across every morning delivered")+
     card("Reply rate",fmtInt(c.reply_rate_pct)+'<span class="unit">%</span>',fmtInt(c.mornings_replied)+" of "+fmtInt(c.mornings_delivered)+" mornings delivered got a reply that day")+
     card("Booked",fmtInt(c.booked),"calls on the calendar")+
@@ -542,9 +562,9 @@ function renderCohort(c){
     card("Completed",fmtInt(c.completed),"finished all ten mornings")+
     card("Conversion",fmtInt(c.conversion_pct)+'<span class="unit">%</span>',fmtInt(conv)+" of "+fmtInt(c.completed)+" who finished booked or enrolled")+
     '<div class="card wide"><div class="lbl">Where everyone is</div><div class="bars">'+bars+'</div>'+
-    '<div class="sub">men in the series by which morning they are on. 0 means he said yes and his first morning has not come yet. Test lines are not counted anywhere on this page.</div></div>'+
+    '<div class="sub">'+W("men","people")+' in the series by which morning they are on. 0 means '+W("he said yes and his","they said yes and their")+' first morning has not come yet. Test lines are not counted anywhere on this page.</div></div>'+
     '<div class="card wide"><div class="lbl">Reply rate by morning</div><div class="bars">'+replyBars(c.reply_by_day||[])+'</div>'+
-    '<div class="sub">of the men who received each morning, the share who replied that day. A grey bar means nobody has reached that morning yet. This curve is the one to watch as the cohort grows.</div></div>';
+    '<div class="sub">of the '+W("men","people")+' who received each morning, the share who replied that day. A grey bar means nobody has reached that morning yet. This curve is the one to watch as the cohort grows.</div></div>';
   document.getElementById("refreshed").textContent="refreshed "+tShort(c.generated_at||new Date().toISOString());
 }
 function renderChips(){
@@ -558,7 +578,7 @@ function renderTable(){
   var inS=men.filter(function(l){return l.consented}).length;
   document.getElementById("tnote").textContent=inS+(inS===1?" in the series":" in the series")+(men.length-inS?", "+(men.length-inS)+" invited and waiting":"");
   var tb=document.getElementById("tbody");
-  if(!list.length){tb.innerHTML='<tr><td colspan="6" class="tempty">'+(men.length?"No one matches that filter.":"Nobody yet. The first men will show up here.")+'</td></tr>';return}
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" class="tempty">'+(men.length?"No one matches that filter.":"Nobody yet. The first "+W("men","people")+" will show up here.")+'</td></tr>';return}
   tb.innerHTML=list.map(function(l){
     var pct=Math.round(l.listen_through_pct||0);
     return '<tr class="lrow" data-id="'+esc(l.lead_id)+'">'+
@@ -673,7 +693,7 @@ document.getElementById("tlist").addEventListener("click",function(e){
     var who=confirm("Send this draft to "+SENDER+"'s phone? (Cancel sends it to Shep's instead.)")?"owner":"shep";
     tmsg(k,"","Sending a test.");
     tpost("api/texts/test",{key:k,body:ta.value,to:who}).then(function(j){
-      if(j.ok)tmsg(k,"ok","Sent to the phone ending "+j.to+". This does not change what men receive.");
+      if(j.ok)tmsg(k,"ok","Sent to the phone ending "+j.to+". This does not change what "+W("men receive","anyone receives")+".");
       else tmsg(k,"bad",(j.problems||[j.error||"That did not send."]).join("\n"))
     }).catch(function(){tmsg(k,"bad","That did not send.")});
   } else if(b.hasAttribute("data-reset")){
