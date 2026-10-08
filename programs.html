@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Programs Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- The Programs page (2026-10-08): paid programs like the Rapid Implementation
+     Challenge. Opens with the same key as the board. Never put a key in this file. -->
+<style>
+:root{
+  --ground:#eceef2; --surface:#fff; --surface-2:#f5f7fa; --sunk:#e4e8ee;
+  --ink:#171a21; --ink-soft:#414957; --muted:#6b7383;
+  --rule:#d9dde5; --rule-soft:#e8ebf1;
+  --brass:#9a7a34; --brass-bright:#b8964e; --brass-wash:#f7f1e3;
+  --alarm:#a33b2c; --alarm-wash:#fbeae7; --go:#2f6b4f; --go-wash:#e8f2ec;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0f1218; --surface:#181c24; --surface-2:#1e232c; --sunk:#13161d;
+  --ink:#e8ebf1; --ink-soft:#b4bbc9; --muted:#8a92a3; --rule:#2a303b; --rule-soft:#222732;
+  --brass:#d9b978; --brass-bright:#e7cb90; --brass-wash:#2a2417;
+  --alarm:#e08a7d; --alarm-wash:#2e1b18; --go:#7dc4a0; --go-wash:#16241d;
+}}
+:root[data-theme="dark"]{
+  --ground:#0f1218; --surface:#181c24; --surface-2:#1e232c; --sunk:#13161d;
+  --ink:#e8ebf1; --ink-soft:#b4bbc9; --muted:#8a92a3; --rule:#2a303b; --rule-soft:#222732;
+  --brass:#d9b978; --brass-bright:#e7cb90; --brass-wash:#2a2417;
+  --alarm:#e08a7d; --alarm-wash:#2e1b18; --go:#7dc4a0; --go-wash:#16241d;
+}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:Karla,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15.5px;line-height:1.5}
+h1,h2{font-family:Fraunces,Georgia,serif;margin:0;font-weight:600}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--rule)}
+header h1{font-size:21px}
+select,input,textarea,button{font:inherit;color:var(--ink)}
+select,input[type=text],input[type=tel],input[type=email],input[type=date],input[type=url]{padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:0;background:none;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--ink-soft);font-weight:600}
+.tab[aria-selected=true]{background:var(--brass-wash);color:var(--ink)}
+.back{margin-left:auto;color:var(--ink-soft);text-decoration:none;font-weight:600}
+.back:hover{color:var(--ink)}
+main{max-width:1180px;margin:0 auto;padding:20px 16px 64px}
+.state{padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:14.5px;background:var(--surface);border:1px solid var(--rule)}
+.state.off{background:var(--brass-wash);border-color:var(--brass-bright)}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h2{font-size:17px;margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px}
+.tile b{display:block;font-family:Fraunces,Georgia,serif;font-size:28px;font-weight:600;line-height:1.1}
+.tile span{color:var(--muted);font-size:13.5px}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+th{font-size:12.5px;color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12.5px;font-weight:600;background:var(--sunk);color:var(--ink-soft);white-space:nowrap}
+.pill.active{background:var(--go-wash);color:var(--go)}.pill.behind{background:var(--alarm-wash);color:var(--alarm)}
+.pill.invited{background:var(--brass-wash);color:var(--brass)}
+.pill.test{background:var(--sunk);color:var(--muted)}
+a.name{color:var(--ink);font-weight:600}
+.quiet{color:var(--muted)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar input{flex:1;min-width:180px}
+#drop{border:2px dashed var(--rule);border-radius:12px;padding:28px 16px;text-align:center;background:var(--surface);cursor:pointer;margin-bottom:12px}
+#drop.over{border-color:var(--brass-bright);background:var(--brass-wash)}
+#drop strong{display:block;font-size:16px}
+#uplog{list-style:none;margin:0 0 12px;padding:0;font-size:14px}
+#uplog li{padding:4px 0}
+.ok{color:var(--go)}.bad{color:var(--alarm)}
+.srow audio{width:220px;height:32px}
+.ws{display:flex;gap:6px}.ws input{flex:1;min-width:160px}
+button.go{background:var(--ink);color:var(--surface);border:0;border-radius:8px;padding:7px 14px;font-weight:600;cursor:pointer}
+button.go:disabled{opacity:.45;cursor:default}
+button.ghost{background:none;border:1px solid var(--rule);border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink-soft)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--ink-soft);font-weight:600}
+.msg{margin-top:10px;font-size:14px;white-space:pre-wrap}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto}
+#tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12.5px;padding:6px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%)}
+.tgroup{font-family:Fraunces,Georgia,serif;font-size:16px;font-weight:600;margin:18px 0 8px}
+.txt{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.txt .tl{font-weight:700}.txt .tb{margin-left:8px}
+.txt .thelp{color:var(--muted);font-size:13.5px;margin:2px 0 8px}
+.txt textarea{width:100%;min-height:86px;padding:9px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface-2);resize:vertical;line-height:1.45}
+.tact{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.tcount{margin-left:auto;font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){header{padding:12px 16px}.back{margin-left:0}}
+</style></head><body>
+<header>
+  <h1 id="h1">Programs</h1>
+  <select id="prog" aria-label="Which program"></select>
+  <select id="grp" aria-label="Which group"></select>
+  <nav class="tabs" role="tablist">
+    <button class="tab" data-v="clients" aria-selected="true">Clients</button>
+    <button class="tab" data-v="numbers" aria-selected="false">Numbers</button>
+    <button class="tab" data-v="sessions" aria-selected="false">Sessions</button>
+    <button class="tab" data-v="texts" aria-selected="false">Texts</button>
+    <button class="tab" data-v="add" aria-selected="false">Add</button>
+  </nav>
+  <a class="back" id="back" href="#">Conversations</a>
+</header>
+<main>
+  <div class="state" id="state">Loading.</div>
+
+  <section id="v-clients">
+    <div class="toolbar"><input type="text" id="q" placeholder="Search a name or a last reply"><span class="quiet" id="ccount"></span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Name</th><th>Group</th><th>Status</th><th>Session</th><th>Started</th><th>Listened</th><th>DONE</th><th>Worksheets</th><th>Last reply</th></tr></thead>
+      <tbody id="roster"><tr><td colspan="9" class="quiet">Loading.</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section id="v-numbers" hidden>
+    <div class="tiles" id="tiles"></div>
+    <div class="card"><h2 id="chart-title">How far they listened, by session</h2>
+      <div class="quiet" id="chart-sub" style="font-size:13.5px;margin-bottom:8px">Average of how much of each session was played. Hover a bar for the detail.</div>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div class="card"><h2>By session</h2>
+      <div class="tablewrap" style="border:0"><table>
+        <thead><tr><th>Session</th><th>Sent</th><th>Played</th><th>Avg listened</th><th>DONE</th><th>Worksheet opened</th></tr></thead>
+        <tbody id="pertable"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="v-sessions" hidden>
+    <div id="drop"><strong>Drop session recordings here</strong><span class="quiet">or click to choose. You can drop many at once. Name each starting with its number, like "12 - Identity.m4a". A new take replaces the old one.</span></div>
+    <input type="file" id="files" multiple accept="audio/*" hidden>
+    <ul id="uplog"></ul>
+    <div class="tablewrap"><table>
+      <thead><tr><th>#</th><th>Title</th><th>Recording</th><th>Worksheet link (sent with this session)</th></tr></thead>
+      <tbody id="sessions"></tbody></table></div>
+  </section>
+
+  <section id="v-texts" hidden>
+    <p class="quiet" style="margin-top:0">Every text a client receives in this program. These are Christine's words: change one here and it is live on the next send. Words in curly braces are filled in for each person and some have to stay. <b>Text me this</b> sends the draft to a phone first.</p>
+    <div id="tlist"></div>
+  </section>
+
+  <section id="v-add" hidden>
+    <div class="card"><h2>Add a client</h2>
+      <p class="quiet" style="margin-top:0">He gets the invite text and has to reply YES before anything else is sent. Use this for the live cohort, or for a buyer the purchase did not bring in.</p>
+      <div class="form">
+        <label>First name<input type="text" id="a-first" autocomplete="off"></label>
+        <label>Mobile<input type="tel" id="a-phone" autocomplete="off" placeholder="(555) 555-5555"></label>
+        <label>Email (optional)<input type="email" id="a-email" autocomplete="off"></label>
+        <label>Group<select id="a-grp"></select></label>
+        <button class="go" id="a-go">Add and invite</button>
+      </div>
+      <div class="msg" id="a-msg"></div>
+    </div>
+    <div class="card"><h2>New cohort</h2>
+      <p class="quiet" style="margin-top:0">Everyone in a cohort starts session 1 on the same day. Pick the Monday it begins.</p>
+      <div class="form">
+        <label>Name<input type="text" id="c-name" placeholder="January 2027"></label>
+        <label>Session 1 date<input type="date" id="c-date"></label>
+        <button class="go" id="c-go">Create cohort</button>
+      </div>
+      <div class="msg" id="c-msg"></div>
+    </div>
+  </section>
+</main>
+<script>
+var qs=new URLSearchParams(location.search);
+var key=qs.get("key")||"", brand=qs.get("b")||"", showTests=qs.get("tests")==="1";
+var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
+var PROGS=[], prog=null, grp="", view="clients", ROWS=[], loaded={};
+function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function recall(k){try{return localStorage.getItem(k)||""}catch(e){return ""}}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function Q(){return "key="+encodeURIComponent(key)+(brand?"&brand="+encodeURIComponent(brand):"")+(prog?"&program="+encodeURIComponent(prog.key):"")+(showTests?"&tests=1":"")}
+function get(path,extra){return fetch(API+path+"?"+Q()+(extra||"")).then(function(r){return r.json()})}
+function post(path,body){return fetch(API+path+"?"+Q(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json()})}
+function when(iso){if(!iso)return"";var d=new Date(iso),m=(Date.now()-d)/60000;if(m<1)return"just now";if(m<60)return Math.round(m)+"m ago";if(m<1440)return Math.round(m/60)+"h ago";return d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+function day(s){if(!s)return"";var d=new Date(s+"T12:00:00Z");return d.toLocaleDateString(undefined,{month:"short",day:"numeric",timeZone:"UTC"})}
+document.getElementById("back").href="board.html?key="+encodeURIComponent(key)+(brand?"&b="+encodeURIComponent(brand):"")+(showTests?"&tests=1":"");
+
+function loadPrograms(){
+  return get("api/programs").then(function(j){
+    if(!j.ok){document.getElementById("state").textContent=j.error==="unauthorized"?"This link does not open the Programs page. Use your board link.":"Could not load.";return}
+    PROGS=j.programs||[];
+    if(!PROGS.length){document.getElementById("state").textContent="No programs yet for this brand.";return}
+    var want=qs.get("p")||recall("cj_program");
+    prog=PROGS.filter(function(p){return p.key===want})[0]||PROGS[0];
+    document.getElementById("prog").innerHTML=PROGS.map(function(p){return '<option value="'+esc(p.key)+'"'+(p.key===prog.key?" selected":"")+'>'+esc(p.name)+'</option>'}).join("");
+    applyProgram();
+  }).catch(function(){document.getElementById("state").textContent="Offline. Could not load."})}
+function applyProgram(){
+  store("cj_program",prog.key);
+  document.title=prog.short_name+" Board";
+  var days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var rhythm=prog.sessions+" sessions, "+prog.send_days.map(function(d){return days[d]}).join(" ")+" at "+prog.send_hour+"am his time"+(prog.integration_day!=null?", "+days[prog.integration_day]+" integration text":"")+". Replies go to "+(prog.reply_mode==="human"?"Christine, not the assistant":"the assistant")+".";
+  var st=document.getElementById("state");
+  st.className="state"+(prog.active?"":" off");
+  st.innerHTML=(prog.active?"<b>Live.</b> ":"<b>Not live yet.</b> Only +1555 test lines get texts until Shep says go. ")+esc(rhythm);
+  var opts='<option value="">Everyone</option><option value="standalone">Standalone buyers</option>'+(prog.cohorts||[]).map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+' (starts '+esc(day(c.start_date))+')</option>'}).join("");
+  var g=document.getElementById("grp");g.innerHTML=opts;
+  if([].some.call(g.options,function(o){return o.value===grp}))g.value=grp;else grp="";
+  document.getElementById("a-grp").innerHTML='<option value="">Standalone</option>'+(prog.cohorts||[]).map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>'}).join("");
+  loaded={};show(view);
+}
+document.getElementById("prog").addEventListener("change",function(){prog=PROGS.filter(function(p){return p.key===this.value},this)[0];applyProgram()});
+document.getElementById("grp").addEventListener("change",function(){grp=this.value;loaded.clients=loaded.numbers=false;show(view)});
+
+/* ---------- views ---------- */
+function show(v){
+  view=v;
+  [].forEach.call(document.querySelectorAll(".tab"),function(b){b.setAttribute("aria-selected",b.getAttribute("data-v")===v)});
+  ["clients","numbers","sessions","texts","add"].forEach(function(x){document.getElementById("v-"+x).hidden=x!==v});
+  if(!prog)return;
+  if(v==="clients"&&!loaded.clients)loadRoster();
+  if(v==="numbers"&&!loaded.numbers)loadNumbers();
+  if(v==="sessions"&&!loaded.sessions)loadSessions();
+  if(v==="texts"&&!loaded.texts)loadTexts();
+  if(location.hash!=="#"+v)history.replaceState(null,"","#"+v);
+}
+[].forEach.call(document.querySelectorAll(".tab"),function(b){b.addEventListener("click",function(){show(b.getAttribute("data-v"))})});
+
+/* ---------- clients ---------- */
+var LABEL={invited:"invited",active:"active",behind:"behind",completed:"finished",opted_out:"opted out",paused:"paused"};
+function loadRoster(){
+  loaded.clients=true;
+  get("api/program/roster","&cohort="+encodeURIComponent(grp)).then(function(j){
+    ROWS=j.ok?j.rows:[];renderRoster();
+  }).catch(function(){document.getElementById("roster").innerHTML='<tr><td colspan="9" class="bad">Could not load.</td></tr>'})}
+function renderRoster(){
+  var q=document.getElementById("q").value.trim().toLowerCase();
+  var rows=ROWS.filter(function(r){return !q||(r.name+" "+(r.last_reply||"")).toLowerCase().indexOf(q)>=0});
+  document.getElementById("ccount").textContent=rows.length+(rows.length===1?" client":" clients");
+  if(!rows.length){document.getElementById("roster").innerHTML='<tr><td colspan="9" class="quiet">Nobody here yet. Add a client on the Add tab, or wait for a purchase.</td></tr>';return}
+  var board="board.html?key="+encodeURIComponent(key)+(brand?"&b="+encodeURIComponent(brand):"")+(showTests?"&tests=1":"")+"&lead=";
+  document.getElementById("roster").innerHTML=rows.map(function(r){
+    return '<tr><td><a class="name" href="'+board+encodeURIComponent(r.lead_id)+'">'+esc(r.name)+'</a> <span class="quiet mono">'+esc(r.last4)+'</span>'+(r.test?' <span class="pill test">test</span>':'')+'</td>'+
+      '<td>'+esc(r.group)+'</td>'+
+      '<td><span class="pill '+esc(r.status)+'">'+esc(LABEL[r.status]||r.status)+'</span></td>'+
+      '<td class="num">'+(r.session?esc(r.session)+' of '+esc(r.sessions):'<span class="quiet">not started</span>')+'</td>'+
+      '<td class="num">'+(r.start_date?esc(day(r.start_date)):'<span class="quiet">'+(r.status==="invited"?"after YES":"")+'</span>')+'</td>'+
+      '<td class="num">'+(r.sent?esc(r.played)+' of '+esc(r.sent)+' played'+(r.listen_pct!=null?'<br><span class="quiet">avg '+esc(r.listen_pct)+'%</span>':''):'<span class="quiet">none sent</span>')+'</td>'+
+      '<td class="num">'+esc(r.done)+'</td>'+
+      '<td class="num">'+(r.worksheets_sent?esc(r.worksheets_opened)+' of '+esc(r.worksheets_sent)+' opened':'<span class="quiet">none yet</span>')+'</td>'+
+      '<td>'+(r.last_reply?'<span class="quiet">'+esc(when(r.last_reply_at))+'</span><br>'+esc(r.last_reply):'<span class="quiet">no reply yet</span>')+'</td></tr>'}).join("")}
+document.getElementById("q").addEventListener("input",renderRoster);
+
+/* ---------- numbers ---------- */
+function loadNumbers(){
+  loaded.numbers=true;
+  get("api/program/numbers","&cohort="+encodeURIComponent(grp)).then(function(j){
+    if(!j.ok)return;
+    var T=[[j.enrolled,"enrolled"],[j.waiting_on_yes,"waiting on YES"],[j.active,"active"],[j.behind,"behind (3 unplayed in a row)"],[j.completed,"finished"],[j.avg_listen_pct==null?"-":j.avg_listen_pct+"%","average listened"],[j.done_rate_pct==null?"-":j.done_rate_pct+"%","sessions answered DONE"]];
+    document.getElementById("tiles").innerHTML=T.map(function(t){return '<div class="tile"><b>'+esc(t[0])+'</b><span>'+esc(t[1])+'</span></div>'}).join("");
+    drawChart(j.per_session);
+    document.getElementById("pertable").innerHTML=j.per_session.filter(function(s){return s.sent}).map(function(s){
+      return '<tr><td class="num">'+s.session+'</td><td class="num">'+s.sent+'</td><td class="num">'+s.played+'</td><td class="num">'+(s.listen_pct==null?"-":s.listen_pct+"%")+'</td><td class="num">'+s.done+'</td><td class="num">'+(s.worksheet_sent?s.worksheet_opened+" of "+s.worksheet_sent:"-")+'</td></tr>'}).join("")||'<tr><td colspan="6" class="quiet">No sessions sent yet.</td></tr>';
+  })}
+/* One series, so one hue and no legend: the title names it. Bars rise from a
+   shared baseline with rounded tops; sessions not sent yet show as a faint stub. */
+function drawChart(per){
+  var W=1100,H=230,L=36,R=8,TOP=10,B=28,n=per.length,bw=(W-L-R)/n,ns="http://www.w3.org/2000/svg";
+  var y=function(p){return TOP+(H-TOP-B)*(1-p/100)};
+  var h='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Average listened per session">';
+  [0,25,50,75,100].forEach(function(t){h+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(t)+'" y2="'+y(t)+'" stroke="var(--rule-soft)"/><text x="'+(L-6)+'" y="'+(y(t)+4)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+t+'%</text>'});
+  per.forEach(function(s,i){
+    var x=L+i*bw+1,w=Math.max(2,bw-2),v=s.listen_pct;
+    if(v==null){h+='<rect x="'+x+'" y="'+(y(0)-2)+'" width="'+w+'" height="2" fill="var(--rule)"/>'}
+    else{var top=y(Math.max(v,1)),r=Math.min(4,w/2),hh=y(0)-top;
+      h+='<path d="M'+x+','+y(0)+'V'+(top+r)+'Q'+x+','+top+' '+(x+r)+','+top+'H'+(x+w-r)+'Q'+(x+w)+','+top+' '+(x+w)+','+(top+r)+'V'+y(0)+'Z" fill="var(--brass-bright)"/>'}
+    h+='<rect class="hit" data-i="'+i+'" x="'+(L+i*bw)+'" y="'+TOP+'" width="'+bw+'" height="'+(H-TOP-B)+'" fill="transparent"/>';
+    if((i+1)%10===0||i===0)h+='<text x="'+(L+i*bw+bw/2)+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+(i+1)+'</text>';
+  });
+  h+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="var(--rule)"/></svg><div id="tip" hidden></div>';
+  var box=document.getElementById("chart");box.innerHTML=h;
+  var tip=document.getElementById("tip");
+  box.querySelector("svg").addEventListener("mousemove",function(e){
+    var t=e.target;if(!t.classList||!t.classList.contains("hit")){tip.hidden=true;return}
+    var s=per[+t.getAttribute("data-i")],rb=box.getBoundingClientRect(),tb=t.getBoundingClientRect();
+    tip.innerHTML="Session "+s.session+": "+(s.sent?(s.listen_pct+"% avg, "+s.played+" of "+s.sent+" played, "+s.done+" DONE"):"not sent yet");
+    tip.style.left=(tb.left-rb.left+tb.width/2)+"px";tip.style.top=(tb.top-rb.top+(tb.height*0.15))+"px";tip.hidden=false});
+  box.querySelector("svg").addEventListener("mouseleave",function(){tip.hidden=true});
+}
+
+/* ---------- sessions ---------- */
+function loadSessions(){
+  loaded.sessions=true;
+  get("api/program/sessions").then(function(j){
+    if(!j.ok)return;
+    var have=j.sessions.filter(function(s){return s.audio_url}).length;
+    document.querySelector("#drop strong").textContent="Drop session recordings here ("+have+" of "+j.sessions.length+" loaded)";
+    document.getElementById("sessions").innerHTML=j.sessions.map(function(s){
+      return '<tr class="srow"><td class="num">'+s.session+'</td><td>'+(s.title?esc(s.title):'<span class="quiet">no recording yet</span>')+'</td>'+
+        '<td>'+(s.audio_url?'<audio controls preload="none" src="'+esc(s.audio_url)+'"></audio>':'')+'</td>'+
+        '<td>'+(s.audio_url?'<div class="ws"><input type="url" id="ws-'+s.session+'" value="'+esc(s.worksheet_url||"")+'" placeholder="https://..."><button class="ghost" data-ws="'+s.session+'">Save</button></div><div class="msg" id="wm-'+s.session+'" style="margin-top:4px"></div>':'')+'</td></tr>'}).join("");
+  })}
+document.getElementById("sessions").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-ws]");if(!b)return;var n=b.getAttribute("data-ws"),m=document.getElementById("wm-"+n);
+  m.className="msg";m.textContent="Saving.";
+  post("api/program/worksheet",{session:+n,url:document.getElementById("ws-"+n).value.trim()}).then(function(j){
+    m.className="msg "+(j.ok?"ok":"bad");m.textContent=j.ok?(j.worksheet_url?"Saved. It goes with this session from now on.":"Removed."):(j.error||"Did not save.")})});
+var drop=document.getElementById("drop"),files=document.getElementById("files");
+drop.addEventListener("click",function(){files.click()});
+["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over")})});
+["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over")})});
+drop.addEventListener("drop",function(e){upload([].slice.call(e.dataTransfer.files))});
+files.addEventListener("change",function(){upload([].slice.call(this.files));this.value=""});
+/* One at a time, so a slow connection never has twenty uploads fighting. */
+function upload(list){
+  list.sort(function(a,b){return a.name.localeCompare(b.name,undefined,{numeric:true})});
+  var log=document.getElementById("uplog");
+  (function next(i){
+    if(i>=list.length){loadSessions();return}
+    var f=list[i],li=document.createElement("li");li.textContent=f.name+": uploading.";log.prepend(li);
+    var fd=new FormData();fd.append("file",f);
+    fetch(API+"api/program/session-upload?"+Q(),{method:"POST",body:fd}).then(function(r){return r.json()}).then(function(j){
+      li.className=j.ok?(j.warning?"":"ok"):"bad";
+      li.textContent=f.name+": "+(j.ok?"session "+j.session+" is live as “"+j.title+"”"+(j.warning?". "+j.warning:""):(j.error||"failed"));
+    }).catch(function(){li.className="bad";li.textContent=f.name+": failed (connection)"}).then(function(){next(i+1)});
+  })(0);
+}
+
+/* ---------- texts ---------- */
+var TEXTS={};
+function loadTexts(){
+  loaded.texts=true;
+  get("api/texts").then(function(j){
+    if(!j.ok){document.getElementById("tlist").textContent="Could not load.";return}
+    var list=j.texts||[],groups=[];list.forEach(function(t){if(groups.indexOf(t.group)<0)groups.push(t.group);TEXTS[t.key]=t});
+    document.getElementById("tlist").innerHTML=groups.map(function(g){
+      return '<div class="tgroup">'+esc(g)+'</div>'+list.filter(function(t){return t.group===g}).map(function(t){
+        var id=t.key.replace(/[^a-z0-9_]/gi,"_");
+        return '<div class="txt"><div><span class="tl">'+esc(t.label)+'</span><span class="pill tb">'+(t.is_custom?"edited "+esc(when(t.updated_at)):"original")+'</span></div>'+
+          '<div class="thelp">'+esc(t.help)+'</div><textarea id="ta-'+id+'">'+esc(t.body)+'</textarea>'+
+          '<div class="tact"><button class="go" data-save="'+esc(t.key)+'">Save</button><button class="ghost" data-test="'+esc(t.key)+'">Text me this</button>'+
+          (t.is_custom?'<button class="ghost" data-reset="'+esc(t.key)+'">Back to original</button>':'')+'<span class="tcount">'+t.body.length+' characters</span></div>'+
+          '<div class="msg" id="tm-'+id+'"></div></div>'}).join("")}).join("");
+  })}
+document.getElementById("tlist").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  var k=b.getAttribute("data-save")||b.getAttribute("data-test")||b.getAttribute("data-reset");if(!k)return;
+  var id=k.replace(/[^a-z0-9_]/gi,"_"),ta=document.getElementById("ta-"+id),m=document.getElementById("tm-"+id);
+  var say=function(ok,t){m.className="msg "+(ok?"ok":"bad");m.textContent=t};
+  if(b.hasAttribute("data-save"))post("api/texts/save",{key:k,body:ta.value,by:"programs page"}).then(function(j){if(j.ok){say(true,"Saved. Live on the next send.");loaded.texts=false;setTimeout(loadTexts,900)}else say(false,(j.problems||[j.error||"Did not save."]).join("\n"))});
+  if(b.hasAttribute("data-test")){var who=confirm("Send this draft to Christine's phone? (Cancel sends it to Shep's instead.)")?"owner":"shep";
+    post("api/texts/test",{key:k,body:ta.value,to:who}).then(function(j){say(j.ok,j.ok?"Sent to the phone ending "+j.to+". Nothing changed for clients.":(j.problems||[j.error||"Did not send."]).join("\n"))})}
+  if(b.hasAttribute("data-reset")&&confirm("Put the original wording back?"))post("api/texts/reset",{key:k}).then(function(j){if(j.ok){loaded.texts=false;loadTexts()}else say(false,j.error||"Did not work.")});
+});
+
+/* ---------- add ---------- */
+document.getElementById("a-go").addEventListener("click",function(){
+  var b=this,m=document.getElementById("a-msg");
+  var body={program:prog.key,first_name:document.getElementById("a-first").value.trim(),phone:document.getElementById("a-phone").value.trim(),email:document.getElementById("a-email").value.trim(),cohort_id:document.getElementById("a-grp").value||null};
+  if(!body.phone){m.className="msg bad";m.textContent="A mobile number is needed.";return}
+  if(!confirm("Add "+(body.first_name||"this client")+" to "+prog.name+"?"+(prog.active?" The invite text goes to his phone now (or at 7:30am his time).":" The program is not live, so nothing is sent unless this is a +1555 test line.")))return;
+  b.disabled=true;m.className="msg";m.textContent="Adding.";
+  post("api/program/enroll",body).then(function(j){
+    b.disabled=false;m.className="msg "+(j.ok?"ok":"bad");m.textContent=j.ok?"Done: "+j.state+".":(j.error||"Did not work.");
+    if(j.ok){["a-first","a-phone","a-email"].forEach(function(x){document.getElementById(x).value=""});loaded.clients=loaded.numbers=false}
+  }).catch(function(){b.disabled=false;m.className="msg bad";m.textContent="Did not work (connection). Nothing was sent."})});
+document.getElementById("c-go").addEventListener("click",function(){
+  var m=document.getElementById("c-msg");
+  post("api/program/cohort",{program:prog.key,name:document.getElementById("c-name").value.trim(),start_date:document.getElementById("c-date").value}).then(function(j){
+    m.className="msg "+(j.ok?"ok":"bad");m.textContent=j.ok?"Cohort created.":(j.error||"Did not work.");
+    if(j.ok)loadPrograms()})});
+
+var h0=location.hash.replace("#","");if(["clients","numbers","sessions","texts","add"].indexOf(h0)>=0)view=h0;
+loadPrograms();
+</script>
+</body></html>

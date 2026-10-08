@@ -229,6 +229,7 @@ td.msg i{color:var(--muted)}
       <button class="tab" role="tab" id="t-num" aria-selected="false" aria-controls="numbers">Numbers</button>
       <button class="tab" role="tab" id="t-rec" aria-selected="false" aria-controls="recordings">Recordings</button>
       <button class="tab" role="tab" id="t-txt" aria-selected="false" aria-controls="texts">Texts</button>
+      <button class="tab" id="t-prog" aria-selected="false" title="Paid programs: who is enrolled, sessions, worksheets">Programs</button>
     </nav>
     <span class="live" id="live"><span class="dot"></span>loading</span>
   </header>
@@ -378,13 +379,19 @@ function stamp(iso){var d=new Date(iso);
 var SHORT={drip:"series",welcome:"series",invite:"series",invite_nudge:"series",done_reply:"series",
   build_reply:"her calendar",identity:"approved answer",help:"carrier",stop_confirm:"opt-out",
   crisis_ack:"crisis message",conversational:"assistant",invitation:"assistant",
-  stalled_nudge:"assistant",human:"you"};
+  stalled_nudge:"assistant",human:"you",
+  program_invite:"program",program_reminder:"program",program_welcome:"program",program_orientation:"program",
+  program_session:"program",program_integration:"program",program_complete:"program",program_done_reply:"program",
+  program_already_in:"program"};
 var VOICE={drip:"sent by the series",welcome:"sent by the series",invite:"sent by the series",
   build_reply:"her calendar, sent automatically",done_reply:"sent by the series",
   invite_nudge:"sent by the series",identity:"the approved answer",help:"carrier reply",
   stop_confirm:"opt-out confirmation",crisis_ack:"the crisis message",
   conversational:"written by the assistant",invitation:"written by the assistant",
-  human:"written by you",stalled_nudge:"written by the assistant"};
+  human:"written by you",stalled_nudge:"written by the assistant",
+  program_invite:"sent by the program",program_reminder:"sent by the program",program_welcome:"sent by the program",
+  program_orientation:"sent by the program",program_session:"sent by the program",program_integration:"sent by the program",
+  program_complete:"sent by the program",program_done_reply:"sent by the program",program_already_in:"sent by the program"};
 /* Which of the four groups a thread is in. First line that fits wins, so
    every thread lands in exactly one. */
 var SENT_KINDS={human:1,conversational:1,invitation:1,stalled_nudge:1,identity:1,build_reply:1,done_reply:1};
@@ -430,7 +437,7 @@ function renderRows(){
     if(t.test)tags.push('<span class="tag">test</span>');
     return '<button class="row'+(st==="you"?' waiting':'')+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
       '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
-      '<span class="rday">'+(t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
+      '<span class="rday">'+(t.track==="program"?(t.consented?"program, session "+esc(t.day):"program, invited"):t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
       '<div class="rprev">'+(t.pending_invite?'<i style="color:var(--muted)">first text goes out at 7:30 '+W("his","their")+' time</i>':(t.last_dir==="outbound"?"<b>"+esc(SHORT[t.last_kind]||"sent under "+SENDER+"'s name")+": </b>":"<b>"+W("him","them")+": </b>")+esc((t.last_body||"").slice(0,90)))+'</div>'+
       (tags.length?'<div class="rtags">'+tags.join("")+'</div>':'')+'</button>'}).join("")}
 function loadList(){
@@ -438,8 +445,10 @@ function loadList(){
     if(!j.ok){document.getElementById("live").textContent=j.error||"could not load";return}
     threads=j.threads;renderRows();
     var n=threads.filter(function(t){return t.needs_her}).length;
-    var inSeries=threads.filter(function(t){return t.consented}).length;
-    var waiting=threads.length-inSeries;
+    /* Program clients (RIC) are counted on the Programs page, not here. */
+    var series=threads.filter(function(t){return t.track!=="program"});
+    var inSeries=series.filter(function(t){return t.consented}).length;
+    var waiting=series.length-inSeries;
     var bits=[inSeries+(inSeries===1?W(" man in the series"," person in the series"):W(" men in the series"," people in the series"))];
     if(waiting)bits.push(waiting+(waiting===1?" invited, waiting":" invited, waiting"));
     bits.push(n?n+" need you":"nobody waiting on you");
@@ -453,7 +462,7 @@ function loadThread(id){
     if(!j.ok){return}
     var t=j.thread;
     document.getElementById("pname").textContent=t.name;
-    var bits=[t.consented?"day "+t.day+" of 10":"invited, has not said yes", t.phone_masked];
+    var bits=[t.track==="program"?(t.consented?"program client, session "+t.day:"program client, invited"):t.consented?"day "+t.day+" of 10":"invited, has not said yes", t.phone_masked];
     if(t.score_open!=null)bits.push("opened at "+t.score_open+(t.score_close!=null?", closed at "+t.score_close:""));
     if(t.built)bits.push("said BUILD");
     document.getElementById("pmeta").textContent=bits.join(" · ");
@@ -723,8 +732,13 @@ document.getElementById("t-conv").addEventListener("click",function(){showTab("c
 document.getElementById("t-num").addEventListener("click",function(){showTab("num")});
 document.getElementById("t-rec").addEventListener("click",function(){showTab("rec")});
 document.getElementById("t-txt").addEventListener("click",function(){showTab("txt")});
+/* The Programs page (RIC and the courses after it) opens with the same key. */
+document.getElementById("t-prog").addEventListener("click",function(){
+  location.href="programs.html?key="+encodeURIComponent(key)+(brand?"&b="+encodeURIComponent(brand):"")+(showTests?"&tests=1":"")});
 window.addEventListener("hashchange",function(){showTab(tabFromHash())});
 
-loadBrands().then(function(){loadList();showTab(tabFromHash())});
+loadBrands().then(function(){loadList();showTab(tabFromHash());
+  /* &lead=<id> opens that thread (the Programs page links here). */
+  if(qs.get("lead")){showTab("conv");loadThread(qs.get("lead"))}});
 setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current); if(numbersLoaded&&!document.getElementById("numbers").hidden)loadNumbers();} },20000);
 </script></body></html>
