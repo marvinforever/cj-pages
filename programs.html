@@ -221,7 +221,8 @@ var LABEL={invited:"invited",active:"active",behind:"behind",completed:"finished
 function loadRoster(){
   loaded.clients=true;
   get("api/program/roster","&cohort="+encodeURIComponent(grp)).then(function(j){
-    ROWS=j.ok?j.rows:[];renderRoster();
+    if(!j.ok){document.getElementById("roster").innerHTML='<tr><td colspan="9" class="bad">'+esc(j.error||"Could not load the clients.")+'</td></tr>';return}
+    ROWS=j.rows;renderRoster();
   }).catch(function(){document.getElementById("roster").innerHTML='<tr><td colspan="9" class="bad">Could not load.</td></tr>'})}
 function renderRoster(){
   var q=document.getElementById("q").value.trim().toLowerCase();
