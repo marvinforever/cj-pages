@@ -162,7 +162,7 @@ button.ghost{background:none;border:1px solid var(--rule);border-radius:8px;padd
 </main>
 <script>
 var qs=new URLSearchParams(location.search);
-var key=qs.get("key")||"", brand=qs.get("b")||"", showTests=qs.get("tests")==="1";
+var key=qs.get("key")||"", brand=qs.get("b")||"", showTests=qs.get("tests")==="1"||/[#&]tests=1/.test(location.hash);
 var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
 var PROGS=[], prog=null, grp="", view="clients", ROWS=[], loaded={};
 function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -289,7 +289,11 @@ function loadSessions(){
     document.getElementById("sessions").innerHTML=j.sessions.map(function(s){
       return '<tr class="srow"><td class="num">'+s.session+'</td><td>'+(s.title?esc(s.title):'<span class="quiet">no recording yet</span>')+'</td>'+
         '<td>'+(s.audio_url?'<audio controls preload="none" src="'+esc(s.audio_url)+'"></audio>':'')+'</td>'+
-        '<td>'+(s.audio_url?'<div class="ws"><input type="url" id="ws-'+s.session+'" value="'+esc(s.worksheet_url||"")+'" placeholder="https://..."><button class="ghost" data-ws="'+s.session+'">Save</button></div><div class="msg" id="wm-'+s.session+'" style="margin-top:4px"></div>':'')+'</td></tr>'}).join("");
+        '<td>'+(s.audio_url?'<div class="ws"><input type="url" id="ws-'+s.session+'" value="'+esc(s.worksheet_url||"")+'" placeholder="https://..."><button class="ghost" data-ws="'+s.session+'">Save</button></div><div class="msg" id="wm-'+s.session+'" style="margin-top:4px"></div>':'')+'</td></tr>'}).join("")+
+      /* Bonus sessions (sent on a Saturday) and recordings set aside (never sent). */
+      (j.extras||[]).map(function(x){
+        return '<tr class="srow"><td class="num quiet">'+(x.bonus_after!=null?"bonus":"aside")+'</td><td>'+esc(x.title||"")+'<br><span class="quiet">'+(x.bonus_after!=null?"Sent the Saturday after session "+esc(x.bonus_after)+", instead of the integration text":"Set aside: kept, not sent")+'</span></td>'+
+          '<td>'+(x.audio_url?'<audio controls preload="none" src="'+esc(x.audio_url)+'"></audio>':'')+'</td><td></td></tr>'}).join("");
   })}
 document.getElementById("sessions").addEventListener("click",function(e){
   var b=e.target.closest("button[data-ws]");if(!b)return;var n=b.getAttribute("data-ws"),m=document.getElementById("wm-"+n);

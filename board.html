@@ -116,6 +116,22 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
 .count.over{color:var(--alarm);font-weight:700}
 .flash{margin-top:9px;font-size:14px;font-weight:600}
 .flash.ok{color:var(--go)} .flash.bad{color:var(--alarm)}
+/* draft mode (2026-10-12): the assistant's suggestion waits here for her */
+.draft{border:1px dashed var(--brass-bright);background:var(--brass-wash);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.draft .dl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:4px}
+.draft .db{white-space:pre-wrap;font-size:14.5px;line-height:1.45}
+.draft .da{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.draft button,.coachbox button{background:none;border:1px solid var(--rule);border-radius:999px;padding:4px 12px;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
+.draft button.use{border-color:var(--brass-bright);color:var(--brass);font-weight:600}
+.coachme{align-self:flex-end;background:none;border:0;color:var(--muted);font-size:11.5px;cursor:pointer;padding:0 4px;margin-top:-4px;text-decoration:underline}
+.coachbox{border:1px solid var(--rule);background:var(--surface);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.coachbox .ct{font-size:13px;color:var(--ink-soft);margin-bottom:6px}
+.coachbox textarea{width:100%;min-height:60px;font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:8px;background:var(--surface-2);color:var(--ink)}
+.coachlist{margin-top:28px}
+.coachlist h3{font-size:17px;margin-bottom:6px}
+.coachlist .cn{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:14px}
+.coachlist .cn span{flex:1}
+.coachlist .cn button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12px;text-decoration:underline}
 
 /* tabs in the header */
 .tabs{display:flex;gap:4px;margin-left:18px}
@@ -248,6 +264,12 @@ td.msg i{color:var(--muted)}
       <div class="phead" id="phead"><button class="back" id="back">Back</button><h2 id="pname">Pick someone</h2><span class="meta" id="pmeta"></span></div>
       <div class="msgs" id="msgs"><div class="empty">Choose a name on the left to read the whole conversation.</div></div>
       <div class="composer" id="composer" hidden>
+        <div class="draft" id="draft" hidden></div>
+        <div class="coachbox" id="coachbox" hidden>
+          <div class="ct" id="coachabout"></div>
+          <textarea id="coachnote" placeholder="What should it say or do instead? For example: Say it the way I would. Ask what he noticed, then invite him to a call."></textarea>
+          <div class="da" style="display:flex;gap:8px;margin-top:6px"><button id="coachsave">Save note</button><button id="coachcancel">Cancel</button></div>
+        </div>
         <div class="quick" id="quick"></div>
         <textarea id="reply" placeholder="Write to him yourself. It goes out from your number, exactly as you type it." maxlength="700"></textarea>
         <div class="crow">
@@ -284,6 +306,7 @@ td.msg i{color:var(--muted)}
   <div class="numbers" id="texts" role="tabpanel" hidden>
     <div class="tguide" id="tguide"><b>Every text a man receives, in your words.</b> Change any of them here and it is live on the next send. Words in curly braces, like <span class="mono">{link}</span>, are filled in for each man and have to stay. <b>Text me this</b> sends the draft to your own phone first, so you can read it the way he will. Every earlier version is kept under History.</div>
     <div id="tlist"><div class="tempty">Loading.</div></div>
+    <div class="coachlist" id="coachlist"></div>
   </div>
   <div class="numbers" id="numbers" role="tabpanel" hidden>
     <section class="sect">
@@ -435,6 +458,7 @@ function renderRows(){
     if(t.dones)tags.push('<span class="tag">'+t.dones+' done</span>');
     if(t.score_open!=null)tags.push('<span class="tag">'+t.score_open+(t.score_close!=null?" to "+t.score_close:"")+'</span>');
     if(t.test)tags.push('<span class="tag">test</span>');
+    if(t.draft)tags.push('<span class="tag build">reply drafted</span>');
     return '<button class="row'+(st==="you"?' waiting':'')+(t.test?' test':'')+'" data-id="'+esc(t.lead_id)+'" aria-current="'+(current===t.lead_id)+'">'+
       '<div class="rtop"><span class="rname">'+esc(t.name)+'</span>'+
       '<span class="rday">'+(t.track==="program"?(t.consented?"program, session "+esc(t.day):"program, invited"):t.consented?"day "+esc(t.day)+" of 10":"not started")+'</span><span class="rwhen">'+esc(when(t.last_at))+'</span></div>'+
@@ -471,12 +495,48 @@ function loadThread(id){
       var label=m.dir==="in"?W("him","them"):(VOICE[m.kind]||"sent under "+SENDER+"'s name");
       var head="";
       if(label!==last){head='<div class="who '+(m.dir==="in"?"in":"out")+(m.kind==="human"?" hand":"")+'">'+esc(label)+'</div>';last=label}
-      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'}).join("");
+      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'+
+        (m.kind==="conversational"?'<button class="coachme" data-about="'+esc(m.body)+'">Coach this reply</button>':'')}).join("");
     var mb=document.getElementById("msgs");mb.scrollTop=mb.scrollHeight;
     document.getElementById("composer").hidden=false;
     document.getElementById("flash").textContent="";
     loadQuick(id);
+    loadDraft(id);
   })}
+/* ---------------- draft mode and coaching (2026-10-12) ---------------- */
+var draftNow=null, coachAbout="";
+function loadDraft(id){
+  var box=document.getElementById("draft");box.hidden=true;draftNow=null;
+  fetch(API+"api/draft?"+Q()+"&lead_id="+encodeURIComponent(id)).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok||!j.draft||current!==id)return;
+    draftNow=j.draft;
+    box.innerHTML='<div class="dl">Suggested reply. Nothing has been sent.</div><div class="db">'+esc(j.draft.body)+'</div>'+
+      '<div class="da"><button class="use" id="duse">Use this</button><button id="dcoach">Coach it</button><button id="ddismiss">Dismiss</button></div>';
+    box.hidden=false;
+  }).catch(function(){})}
+document.getElementById("draft").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b||!draftNow)return;
+  if(b.id==="duse"){ta.value=draftNow.body;ta.dispatchEvent(new Event("input"));ta.focus();
+    flash("ok","In the box. Change anything you like, then press Send.")}
+  if(b.id==="dcoach")openCoach(draftNow.body);
+  if(b.id==="ddismiss"){fetch(API+"api/draft/dismiss?"+Q(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:draftNow.id})})
+    .then(function(){document.getElementById("draft").hidden=true;draftNow=null;loadList()})}
+});
+document.getElementById("msgs").addEventListener("click",function(e){
+  var b=e.target.closest(".coachme");if(b)openCoach(b.getAttribute("data-about"))});
+function openCoach(about){
+  coachAbout=about||"";
+  document.getElementById("coachabout").textContent=coachAbout?"About: \u201c"+coachAbout.slice(0,140)+(coachAbout.length>140?"...":"")+"\u201d":"A note for every future reply";
+  document.getElementById("coachnote").value="";
+  document.getElementById("coachbox").hidden=false;document.getElementById("coachnote").focus()}
+document.getElementById("coachcancel").addEventListener("click",function(){document.getElementById("coachbox").hidden=true});
+document.getElementById("coachsave").addEventListener("click",function(){
+  var note=document.getElementById("coachnote").value.trim();if(!note)return;
+  fetch(API+"api/coach?"+Q(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lead_id:current,about:coachAbout,note:note,by:SENDER})})
+   .then(function(r){return r.json()}).then(function(j){
+    if(j.ok){document.getElementById("coachbox").hidden=true;flash("ok","Saved. Every reply from now on reads it. See all notes on the Texts tab.")}
+    else flash("bad",j.error||"That did not save.")}).catch(function(){flash("bad","That did not save.")})});
+function flash(kind,text){var f=document.getElementById("flash");f.className="flash "+kind;f.textContent=text}
 /* saved replies: one tap fills the box, she reads it, then presses Send */
 var quick=[];
 function loadQuick(id){
@@ -682,7 +742,18 @@ function renderTexts(list){
         (hist?'<details><summary>History</summary>'+hist+'</details>':'')+'</div>'}).join("")}).join("");
   list.forEach(function(t){tcount(t.key);document.getElementById("ta-"+t.key).addEventListener("input",function(){tcount(t.key)})});
 }
+function loadCoaching(){
+  fetch(API+"api/coaching?"+Q()).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok)return;
+    var el=document.getElementById("coachlist");
+    el.innerHTML='<h3>Coaching notes for the assistant</h3><div class="tguide">'+(j.mode==="draft"?"The assistant is in <b>draft mode</b>: it suggests replies on each conversation and sends nothing until you press Send.":"The assistant answers on its own.")+' It reads every note below, and the replies you send yourself, before it writes. Add a note from any conversation with <b>Coach this reply</b>.</div>'+
+      (j.notes.length?j.notes.map(function(n){return '<div class="cn"><span>'+esc(n.note)+'</span><button data-rm="'+esc(n.id)+'">Remove</button></div>'}).join(""):'<div class="tempty">No notes yet.</div>');
+  }).catch(function(){})}
+document.getElementById("coachlist").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-rm]");if(!b||!confirm("Stop using this note?"))return;
+  fetch(API+"api/coaching/remove?"+Q(),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:b.getAttribute("data-rm")})}).then(loadCoaching)});
 function loadTexts(){
+  loadCoaching();
   fetch(API+"api/texts?"+Q()).then(function(r){return r.json()}).then(function(j){
     if(!j.ok){document.getElementById("tlist").innerHTML='<div class="tempty">Could not load.</div>';return}
     textsLoaded=true;renderTexts(j.texts||[])
