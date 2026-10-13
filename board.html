@@ -147,6 +147,10 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
 .vn-btn{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
 .listened{align-self:flex-end;font-size:11.5px;color:var(--muted);margin-top:-4px;padding:0 4px}
 .listened b{color:var(--go);font-weight:600}
+/* A reply that came in as a voice message (2026-10-13): the recording sits
+   under the words Whisper heard. */
+.vreply{align-self:flex-start;display:block;width:min(360px,78%);height:36px;margin:-2px 0 6px}
+.vtag{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:3px}
 .coachlist h3{font-size:17px;margin-bottom:6px}
 .coachlist .cn{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:14px}
 .coachlist .cn span{flex:1}
@@ -537,7 +541,8 @@ function loadThread(id){
       var listened="";
       if(m.kind==="voice_note"){var tk=(m.body.match(/\/d\/([A-Za-z0-9]+)/)||[])[1],n=tk&&notesByToken[tk];
         if(n)listened='<div class="listened">'+(n.first_played_at?'<b>Listened</b>'+(n.max_progress_pct?' \u00b7 '+n.max_progress_pct+'% of it':'')+(n.play_count>1?' \u00b7 '+n.play_count+' plays':''):'Not played yet')+(n.duration_seconds?' \u00b7 '+vnFmt(n.duration_seconds)+' long':'')+'</div>'}
-      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'+listened+
+      var vreply=m.media_url?'<audio class="vreply" controls preload="none" src="'+esc(m.media_url)+'"></audio>':"";
+      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+(m.media_url?'<span class="vtag">Voice message, written down by the engine</span>':'')+esc(m.body)+'</div>'+vreply+listened+
         (m.kind==="conversational"?'<button class="coachme" data-about="'+esc(m.body)+'">Coach this reply</button>':'')}).join("");
     var mb=document.getElementById("msgs");mb.scrollTop=mb.scrollHeight;
     document.getElementById("composer").hidden=false;
