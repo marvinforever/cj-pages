@@ -128,6 +128,25 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
 .coachbox .ct{font-size:13px;color:var(--ink-soft);margin-bottom:6px}
 .coachbox textarea{width:100%;min-height:60px;font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:8px;background:var(--surface-2);color:var(--ink)}
 .coachlist{margin-top:28px}
+/* voice note panel (2026-10-13) */
+.vnbox{border:1px solid var(--rule);background:var(--surface);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.vnbox .vt{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.vnbox .vrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vnbox button{background:none;border:1px solid var(--rule);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer}
+.vnbox button.rec{border-color:var(--alarm);color:var(--alarm);font-weight:600}
+.vnbox button.rec.on{background:var(--alarm);color:#fff}
+.vnbox button.vsend{background:var(--brass-bright);color:#fff;border-color:var(--brass-bright);font-weight:600;padding:8px 18px}
+.vnbox button:disabled{opacity:.45;cursor:default}
+.vnbox .vtime{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-soft);min-width:44px}
+.vnbox .vfile{font-size:12.5px;color:var(--muted)} .vnbox .vfile input{display:none}
+.vnbox .vfile span{text-decoration:underline;cursor:pointer}
+.vnbox audio{width:100%;margin-top:8px;display:block}
+.vnbox textarea{width:100%;min-height:62px;font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:8px;background:var(--surface-2);color:var(--ink);margin-top:8px}
+.vnbox .vnote{font-size:12px;color:var(--muted);margin-top:4px}
+.vnbox .vstatus{font-size:13px;margin-top:8px;font-weight:600} .vnbox .vstatus.bad{color:var(--alarm)} .vnbox .vstatus.ok{color:var(--go)}
+.vn-btn{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
+.listened{align-self:flex-end;font-size:11.5px;color:var(--muted);margin-top:-4px;padding:0 4px}
+.listened b{color:var(--go);font-weight:600}
 .coachlist h3{font-size:17px;margin-bottom:6px}
 .coachlist .cn{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:14px}
 .coachlist .cn span{flex:1}
@@ -270,10 +289,28 @@ td.msg i{color:var(--muted)}
           <textarea id="coachnote" placeholder="What should it say or do instead? For example: Say it the way I would. Ask what he noticed, then invite him to a call."></textarea>
           <div class="da" style="display:flex;gap:8px;margin-top:6px"><button id="coachsave">Save note</button><button id="coachcancel">Cancel</button></div>
         </div>
+        <div class="vnbox" id="vnbox" hidden>
+          <div class="vt" id="vntitle">A voice note, just for him</div>
+          <div class="vrow">
+            <button class="rec" id="vnrec" type="button">Record</button>
+            <span class="vtime" id="vntime">0:00</span>
+            <label class="vfile">or <span>choose a recording</span> from your phone or computer<input type="file" id="vnfile" accept="audio/*,.m4a,.mp3,.wav,.webm,.ogg,.aac"></label>
+          </div>
+          <audio id="vnplay" controls hidden></audio>
+          <textarea id="vntext" placeholder="The text that carries the link."></textarea>
+          <div class="vnote">{link} becomes the private listen link. Change the words to change what comes with this note. The set wording lives on the Texts tab.</div>
+          <div class="vrow" style="margin-top:10px">
+            <button class="vsend" id="vnsend" type="button" disabled>Send the note</button>
+            <button id="vncancel" type="button">Cancel</button>
+            <span class="hint" id="vnhint">Goes from your number. The assistant stays quiet on this thread for a day.</span>
+          </div>
+          <div class="vstatus" id="vnstatus"></div>
+        </div>
         <div class="quick" id="quick"></div>
         <textarea id="reply" placeholder="Write to him yourself. It goes out from your number, exactly as you type it." maxlength="700"></textarea>
         <div class="crow">
           <button class="send" id="send" disabled>Send</button>
+          <button class="vn-btn" id="vnopen" type="button" title="Record a short voice note for this one person">Voice note</button>
           <span class="hint" id="replyhint">He gets this from you. The assistant stays quiet on this thread for a day.</span>
           <span class="count" id="count">0 / 600</span>
         </div>
@@ -383,6 +420,7 @@ document.getElementById("brandpick").addEventListener("change",function(){
   current=null;threads=[];renderRows();
   document.getElementById("cols").classList.remove("viewing");
   document.getElementById("composer").hidden=true;
+  if(window.vnReset){vnReset();document.getElementById("vnbox").hidden=true}
   numbersLoaded=false;recLoaded=false;textsLoaded=false;
   loadList();
   var t=tabFromHash(); if(t==="num")loadNumbers(); if(t==="rec")loadRecordings(); if(t==="txt")loadTexts();
@@ -402,7 +440,7 @@ function stamp(iso){var d=new Date(iso);
 var SHORT={drip:"series",welcome:"series",invite:"series",invite_nudge:"series",done_reply:"series",
   build_reply:"her calendar",identity:"approved answer",help:"carrier",stop_confirm:"opt-out",
   crisis_ack:"crisis message",conversational:"assistant",invitation:"assistant",
-  stalled_nudge:"assistant",human:"you",
+  stalled_nudge:"assistant",human:"you",voice_note:"you",
   program_invite:"program",program_reminder:"program",program_welcome:"program",program_orientation:"program",
   program_session:"program",program_integration:"program",program_complete:"program",program_done_reply:"program",
   program_already_in:"program"};
@@ -411,13 +449,13 @@ var VOICE={drip:"sent by the series",welcome:"sent by the series",invite:"sent b
   invite_nudge:"sent by the series",identity:"the approved answer",help:"carrier reply",
   stop_confirm:"opt-out confirmation",crisis_ack:"the crisis message",
   conversational:"written by the assistant",invitation:"written by the assistant",
-  human:"written by you",stalled_nudge:"written by the assistant",
+  human:"written by you",voice_note:"a voice note from you",stalled_nudge:"written by the assistant",
   program_invite:"sent by the program",program_reminder:"sent by the program",program_welcome:"sent by the program",
   program_orientation:"sent by the program",program_session:"sent by the program",program_integration:"sent by the program",
   program_complete:"sent by the program",program_done_reply:"sent by the program",program_already_in:"sent by the program"};
 /* Which of the four groups a thread is in. First line that fits wins, so
    every thread lands in exactly one. */
-var SENT_KINDS={human:1,conversational:1,invitation:1,stalled_nudge:1,identity:1,build_reply:1,done_reply:1};
+var SENT_KINDS={human:1,voice_note:1,conversational:1,invitation:1,stalled_nudge:1,identity:1,build_reply:1,done_reply:1};
 function statusOf(t){
   /* needs_her is the board's own flag, the one behind the red tag and the
      counter in the header. Including it keeps all three in agreement, and
@@ -484,7 +522,8 @@ function loadThread(id){
   fetch(API+"api/thread?"+Q()+"&lead_id="+encodeURIComponent(id))
    .then(function(r){return r.json()}).then(function(j){
     if(!j.ok){return}
-    var t=j.thread;
+    var t=j.thread;threadName=t.name;
+    var notesByToken={};(t.voice_notes||[]).forEach(function(n){notesByToken[n.token]=n});
     document.getElementById("pname").textContent=t.name;
     var bits=[t.track==="program"?(t.consented?"program client, session "+t.day:"program client, invited"):t.consented?"day "+t.day+" of 10":"invited, has not said yes", t.phone_masked];
     if(t.score_open!=null)bits.push("opened at "+t.score_open+(t.score_close!=null?", closed at "+t.score_close:""));
@@ -494,8 +533,11 @@ function loadThread(id){
     document.getElementById("msgs").innerHTML=t.messages.map(function(m){
       var label=m.dir==="in"?W("him","them"):(VOICE[m.kind]||"sent under "+SENDER+"'s name");
       var head="";
-      if(label!==last){head='<div class="who '+(m.dir==="in"?"in":"out")+(m.kind==="human"?" hand":"")+'">'+esc(label)+'</div>';last=label}
-      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'+
+      if(label!==last){head='<div class="who '+(m.dir==="in"?"in":"out")+(m.kind==="human"||m.kind==="voice_note"?" hand":"")+'">'+esc(label)+'</div>';last=label}
+      var listened="";
+      if(m.kind==="voice_note"){var tk=(m.body.match(/\/d\/([A-Za-z0-9]+)/)||[])[1],n=tk&&notesByToken[tk];
+        if(n)listened='<div class="listened">'+(n.first_played_at?'<b>Listened</b>'+(n.max_progress_pct?' \u00b7 '+n.max_progress_pct+'% of it':'')+(n.play_count>1?' \u00b7 '+n.play_count+' plays':''):'Not played yet')+(n.duration_seconds?' \u00b7 '+vnFmt(n.duration_seconds)+' long':'')+'</div>'}
+      return head+'<div class="m '+(m.dir==="in"?"in":"out")+'" title="'+esc(stamp(m.at))+'">'+esc(m.body)+'</div>'+listened+
         (m.kind==="conversational"?'<button class="coachme" data-about="'+esc(m.body)+'">Coach this reply</button>':'')}).join("");
     var mb=document.getElementById("msgs");mb.scrollTop=mb.scrollHeight;
     document.getElementById("composer").hidden=false;
@@ -504,7 +546,7 @@ function loadThread(id){
     loadDraft(id);
   })}
 /* ---------------- draft mode and coaching (2026-10-12) ---------------- */
-var draftNow=null, coachAbout="";
+var draftNow=null, coachAbout="", threadName="";
 function loadDraft(id){
   var box=document.getElementById("draft");box.hidden=true;draftNow=null;
   fetch(API+"api/draft?"+Q()+"&lead_id="+encodeURIComponent(id)).then(function(r){return r.json()}).then(function(j){
@@ -537,6 +579,120 @@ document.getElementById("coachsave").addEventListener("click",function(){
     if(j.ok){document.getElementById("coachbox").hidden=true;flash("ok","Saved. Every reply from now on reads it. See all notes on the Texts tab.")}
     else flash("bad",j.error||"That did not save.")}).catch(function(){flash("bad","That did not save.")})});
 function flash(kind,text){var f=document.getElementById("flash");f.className="flash "+kind;f.textContent=text}
+
+/* ---------------- personal voice notes (2026-10-13) ---------------- */
+/* Record in the page (or pick a recording), hear it back, send it. Whatever
+   the browser records (webm on Chrome and Android, m4a on iPhone and Safari)
+   is turned into MP3 in the page before upload, so it plays on every phone.
+   A picked m4a or mp3 goes up as it is. Nothing sends until she presses Send. */
+var vn={blob:null,type:"",dur:0,rec:null,chunks:[],t0:0,timer:null,busy:false,name:""};
+function vnEl(id){return document.getElementById(id)}
+function vnStatus(kind,text){var e=vnEl("vnstatus");e.className="vstatus "+(kind||"");e.textContent=text||""}
+function vnFmt(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+("0"+(s%60)).slice(-2)}
+function vnReset(){
+  if(vn.rec&&vn.rec.state!=="inactive"){try{vn.rec.stop()}catch(e){}}
+  if(vn.rec&&vn.rec.stream)vn.rec.stream.getTracks().forEach(function(t){t.stop()});
+  clearInterval(vn.timer);vn={blob:null,type:"",dur:0,rec:null,chunks:[],t0:0,timer:null,busy:false,name:""};
+  vnEl("vnrec").textContent="Record";vnEl("vnrec").className="rec";vnEl("vntime").textContent="0:00";
+  var a=vnEl("vnplay");a.hidden=true;a.removeAttribute("src");vnEl("vnsend").disabled=true;vnStatus("","");
+}
+function vnOpen(){
+  vnReset();
+  var box=vnEl("vnbox");box.hidden=false;
+  vnEl("vntitle").textContent="A voice note, just for "+(threadName||W("him","them"));
+  vnEl("vnhint").textContent="Goes from your number. "+W("He hears","They hear")+" it on the same page as the mornings. The assistant stays quiet on this thread for a day.";
+  vnEl("vntext").value="";
+  fetch(API+"api/texts?"+Q()).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok)return;var t=(j.texts||[]).filter(function(x){return x.key==="voice_note"})[0];
+    if(t&&!vnEl("vntext").value)vnEl("vntext").value=t.body||t.default_body||""}).catch(function(){});
+  if(!navigator.mediaDevices||!window.MediaRecorder){vnEl("vnrec").disabled=true;vnStatus("","This browser cannot record. Choose a recording instead.")}
+  box.scrollIntoView({block:"nearest"});
+}
+function vnReady(blob,type,name){
+  vn.blob=blob;vn.type=type;vn.name=name||"";
+  var a=vnEl("vnplay");a.src=URL.createObjectURL(blob);a.hidden=false;
+  a.onloadedmetadata=function(){if(isFinite(a.duration)&&a.duration>0){vn.dur=a.duration;vnEl("vntime").textContent=vnFmt(a.duration)}};
+  vnEl("vnsend").disabled=false;vnStatus("","Listen back. If it is right, press Send the note.");
+}
+vnEl("vnrec").addEventListener("click",function(){
+  var b=this;
+  if(vn.rec&&vn.rec.state==="recording"){vn.rec.stop();return}
+  if(!navigator.mediaDevices)return;
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    var pick=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus",""].filter(function(m){return !m||MediaRecorder.isTypeSupported(m)})[0];
+    var rec=pick?new MediaRecorder(stream,{mimeType:pick}):new MediaRecorder(stream);
+    vn.rec=rec;vn.chunks=[];vn.t0=Date.now();
+    rec.ondataavailable=function(e){if(e.data&&e.data.size)vn.chunks.push(e.data)};
+    rec.onstop=function(){
+      stream.getTracks().forEach(function(t){t.stop()});clearInterval(vn.timer);
+      b.textContent="Record again";b.className="rec";
+      var type=rec.mimeType||pick||"audio/webm";
+      vnReady(new Blob(vn.chunks,{type:type}),type,"");
+      vn.dur=(Date.now()-vn.t0)/1000;
+    };
+    rec.start(250);b.textContent="Stop";b.className="rec on";
+    var a=vnEl("vnplay");a.hidden=true;vnEl("vnsend").disabled=true;vnStatus("","Recording. Press Stop when you are done.");
+    vn.timer=setInterval(function(){vnEl("vntime").textContent=vnFmt((Date.now()-vn.t0)/1000)},500);
+  }).catch(function(){vnStatus("bad","The microphone did not open. Allow the microphone for this site, or choose a recording instead.")});
+});
+vnEl("vnfile").addEventListener("change",function(){
+  var f=this.files&&this.files[0];if(!f)return;
+  vnEl("vnrec").textContent="Record";vnEl("vnrec").className="rec";
+  vnReady(f,f.type||"",f.name);this.value="";
+});
+vnEl("vncancel").addEventListener("click",function(){vnReset();vnEl("vnbox").hidden=true});
+/* MP3 in the page: decode what was recorded, encode mono 64 kbps. */
+var lameLoad=null;
+function loadLame(){
+  if(window.lamejs)return Promise.resolve();
+  if(lameLoad)return lameLoad;
+  lameLoad=new Promise(function(res,rej){
+    var urls=["https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js","https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"];
+    (function tryNext(i){if(i>=urls.length){lameLoad=null;return rej(new Error("encoder"))}
+      var sc=document.createElement("script");sc.src=urls[i];sc.onload=function(){window.lamejs?res():tryNext(i+1)};sc.onerror=function(){tryNext(i+1)};document.head.appendChild(sc)})(0);
+  });
+  return lameLoad;
+}
+function toMp3(blob){
+  return loadLame().then(function(){return blob.arrayBuffer()}).then(function(buf){
+    var AC=window.AudioContext||window.webkitAudioContext;var ctx=new AC();
+    return new Promise(function(res,rej){ctx.decodeAudioData(buf,res,rej)}).then(function(audio){
+      var sr=audio.sampleRate,n=audio.length,ch=audio.numberOfChannels,mix=new Float32Array(n);
+      for(var c=0;c<ch;c++){var d=audio.getChannelData(c);for(var i=0;i<n;i++)mix[i]+=d[i]/ch}
+      var pcm=new Int16Array(n);for(var k=0;k<n;k++){var v=Math.max(-1,Math.min(1,mix[k]));pcm[k]=v<0?v*32768:v*32767}
+      var enc=new lamejs.Mp3Encoder(1,sr,64),out=[],B=1152;
+      for(var p=0;p<n;p+=B){var m=enc.encodeBuffer(pcm.subarray(p,p+B));if(m.length)out.push(new Uint8Array(m))}
+      var tail=enc.flush();if(tail.length)out.push(new Uint8Array(tail));
+      try{ctx.close()}catch(e){}
+      return {blob:new Blob(out,{type:"audio/mpeg"}),dur:audio.duration};
+    });
+  });
+}
+vnEl("vnsend").addEventListener("click",function(){
+  if(!vn.blob||!current||vn.busy)return;
+  var text=vnEl("vntext").value.trim();
+  if(text&&text.indexOf("{link}")<0){vnStatus("bad","Keep {link} in the words. That is where the listen link goes.");return}
+  vn.busy=true;vnEl("vnsend").disabled=true;vnEl("vnsend").textContent="Preparing...";
+  /* Send as-is only when it is AAC or MP3 (plays on every phone). Opus in an
+     mp4 wrapper (what Chrome records) does not play on iPhones: convert it. */
+  var plays=(vn.name&&/\.(m4a|mp3|mp4|aac)$/i.test(vn.name))||/mpeg|mp3/i.test(vn.type)||(/mp4|m4a|aac/i.test(vn.type)&&!/opus|vorbis/i.test(vn.type));
+  var prep=plays?Promise.resolve({blob:vn.blob,dur:vn.dur}):toMp3(vn.blob).catch(function(){
+    /* could not convert: send what we have rather than nothing */
+    return {blob:vn.blob,dur:vn.dur}});
+  prep.then(function(p){
+    vnEl("vnsend").textContent="Sending...";
+    var fd=new FormData();
+    var ext=p.blob.type.indexOf("mpeg")>=0?"mp3":/mp4|m4a/.test(p.blob.type)?"m4a":p.blob.type.indexOf("webm")>=0?"webm":p.blob.type.indexOf("ogg")>=0?"ogg":"m4a";
+    fd.append("file",p.blob,(vn.name&&plays)?vn.name:"note."+ext);
+    fd.append("lead_id",current);fd.append("text",text);fd.append("duration_seconds",String(Math.round(p.dur||vn.dur||0)));fd.append("by",SENDER);
+    return fetch(API+"api/voice-note?"+Q(),{method:"POST",body:fd}).then(function(r){return r.json()});
+  }).then(function(j){
+    vn.busy=false;vnEl("vnsend").textContent="Send the note";
+    if(j&&j.ok){vnReset();vnEl("vnbox").hidden=true;flash("ok","Your voice note is on its way. You get a text the first time "+W("he listens","they listen")+".");loadThread(current);loadList()}
+    else{vnEl("vnsend").disabled=false;vnStatus("bad",(j&&j.error)||"That did not send. Nothing went out.")}
+  }).catch(function(){vn.busy=false;vnEl("vnsend").textContent="Send the note";vnEl("vnsend").disabled=false;vnStatus("bad","That did not send. Nothing went out.")});
+});
+vnEl("vnopen").addEventListener("click",function(){if(vnEl("vnbox").hidden)vnOpen();else{vnReset();vnEl("vnbox").hidden=true}});
 /* saved replies: one tap fills the box, she reads it, then presses Send */
 var quick=[];
 function loadQuick(id){
