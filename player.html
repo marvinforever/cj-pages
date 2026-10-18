@@ -308,7 +308,11 @@
       <h1 class="title" id="episode-title">Today's Track</h1>
       <div class="daydots" id="daydots" aria-hidden="true"></div>
 
-      <button id="play-btn" class="play" aria-label="Play" disabled>
+      <!-- Never disabled (2026-10-18): a phone in Low Power or Low Data mode
+           does not preload audio, so metadata never arrives before a tap, and a
+           disabled button meant the tap could never come. The tap itself now
+           starts the load. -->
+      <button id="play-btn" class="play" aria-label="Play">
         <svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 5.06c0-.98 1.06-1.58 1.9-1.1l11.1 6.4c.84.49.84 1.7 0 2.18l-11.1 6.4c-.84.49-1.9-.12-1.9-1.09V5.06z" transform="translate(-1.5 0)"/></svg>
         <svg class="ic-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4.2" height="15" rx="1.3"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.3"/></svg>
       </button>
@@ -489,6 +493,10 @@
     if (hadError) { audio.load(); hadError = false; noteEl.hidden = true; }
     if (audio.paused) {
       if (audio.ended) audio.currentTime = 0;
+      /* Nothing fetched yet (phone skipped the preload): start the load inside
+         the tap, which is the one moment a phone allows it, and show the
+         spinner until sound comes. */
+      if (audio.readyState === 0) { btn.classList.add("loading"); try { audio.load(); } catch (e) { /* play() below reports */ } }
       var p = audio.play();
       if (p && p.catch) p.catch(function () { showError(); });
     } else {
