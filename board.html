@@ -251,6 +251,7 @@ td.msg i{color:var(--muted)}
 .bcrow .bcm{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);margin-bottom:5px}
 .bcrow .bcs{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:right;white-space:nowrap}
 .bcrow .bcs b{color:var(--go)} .bcrow .bcs i{font-style:normal;color:var(--alarm)}
+.bcsegs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}
 .ghost{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
 .ghost:hover{border-color:var(--brass-bright);color:var(--brass)} .ghost:disabled{opacity:.45;cursor:default}
 .rec{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
@@ -363,6 +364,11 @@ td.msg i{color:var(--muted)}
     <div class="bcwarn" id="bcgate" hidden></div>
     <div class="txt">
       <div class="th"><span class="tl">Write the message</span><span class="tb" id="bccount"></span></div>
+      <div class="bcsegs" id="bcsegs">
+        <button class="fbtn" data-seg="all_in" aria-pressed="true">Everyone who said yes</button>
+        <button class="fbtn" data-seg="in_series" aria-pressed="false">Still in the series</button>
+        <button class="fbtn" data-seg="finished" aria-pressed="false">Finished the series</button>
+      </div>
       <div class="thelp" id="bcwho">Counting who is in the series.</div>
       <textarea id="bcbody" spellcheck="true" placeholder="Write it the way you would text one person."></textarea>
       <div class="tact">
@@ -978,7 +984,30 @@ document.getElementById("tlist").addEventListener("click",function(e){
 /* ---------------- broadcast ---------------- */
 /* One message to everyone still in the series. The engine queues it and sends
    it in each person's own waking hours; this page only composes and watches. */
-var castLoaded=false,castLive=false,castBusy=false;
+var castLoaded=false,castLive=false,castBusy=false,castSeg="all_in",castSegs={};
+/* Who she is writing to. A man who never replied YES is in none of these, on
+   purpose: that YES is the consent this whole series runs on. */
+var SEGWORDS={all_in:"everyone who said yes",in_series:"still in the series",finished:"finished the series"};
+function segCount(){return castSegs[castSeg]||0}
+function renderSeg(a){
+  var n=segCount();
+  document.getElementById("bccount").textContent=n+" "+W(n===1?"man":"men",n===1?"person":"people");
+  Array.prototype.forEach.call(document.querySelectorAll("#bcsegs .fbtn"),function(b){
+    var s=b.getAttribute("data-seg");
+    b.setAttribute("aria-pressed",String(s===castSeg));
+    b.textContent=(s==="all_in"?"Everyone who said yes":s==="in_series"?"Still in the series":"Finished the series")+" "+(castSegs[s]||0);
+  });
+  document.getElementById("bcwho").textContent=
+    n===0?("Nobody is in that group right now, so there is nobody to write to.")
+    :(n+" "+W(n===1?"man":"men",n===1?"person":"people")+", "+SEGWORDS[castSeg]+". "
+      +(castSeg!=="finished"&&a&&a.paused?a.paused+" paused, and will be skipped. ":"")
+      +(castSeg==="finished"?"These are the ones receiving nothing from you right now.":""));
+  bcLen();
+}
+document.getElementById("bcsegs").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-seg]");if(!b)return;
+  castSeg=b.getAttribute("data-seg");renderSeg(castAudience);bcMsg("","")});
+var castAudience=null;
 function bcMsg(cls,text){var e=document.getElementById("bcmsg");e.className="tmsg"+(cls?" "+cls:"");e.textContent=text||""}
 function bcLen(){
   var n=document.getElementById("bcbody").value.trim().length;
@@ -992,13 +1021,9 @@ function loadBroadcast(){
     if(!j.ok)return;
     castLive=!!j.live;
     var a=j.audience||{total:0};
-    document.getElementById("bccount").textContent=a.total+" "+W(a.total===1?"man":"men",a.total===1?"person":"people");
-    document.getElementById("bcwho").textContent=
-      a.total===0?("Nobody has said yes yet, so there is nobody to write to.")
-      :(a.total+" "+W(a.total===1?"man is":"men are",a.total===1?"person is":"people are")+" still in the series. "
-        +(a.finished?a.finished+" finished all the mornings. ":"")
-        +(a.mid?a.mid+" still receiving them. ":"")
-        +(a.paused?a.paused+" paused, and will be skipped. ":""));
+    castSegs=j.segments||{};
+    castAudience=a;
+    renderSeg(a);
     var gate=document.getElementById("bcgate");
     if(!castLive){
       gate.hidden=false;
@@ -1008,7 +1033,7 @@ function loadBroadcast(){
     var L=document.getElementById("bclist");
     L.innerHTML=(j.broadcasts&&j.broadcasts.length)?j.broadcasts.map(function(b){
       var state=b.status==="done"?"<b>sent</b>":b.status==="cancelled"?"<i>cancelled</i>":esc(b.status);
-      return '<div class="bcrow"><div><div class="bcm">'+esc(when(b.created_at))+(b.created_by?" · "+esc(b.created_by):"")+(b.test_only?" · test lines only":"")+'</div><pre>'+esc(b.body)+'</pre></div>'+
+      return '<div class="bcrow"><div><div class="bcm">'+esc(when(b.created_at))+(b.created_by?" · "+esc(b.created_by):"")+(b.audience_label?" · "+esc(b.audience_label):"")+(b.test_only?" · test lines only":"")+'</div><pre>'+esc(b.body)+'</pre></div>'+
         '<div class="bcs">'+state+'<br>'+(b.sent||0)+' of '+(b.total||0)+' sent'+
         (b.failed?'<br><i>'+b.failed+' failed</i>':'')+(b.skipped?'<br>'+b.skipped+' skipped':'')+
         ((b.status==="queued"||b.status==="sending")?'<br><button class="ghost" data-bccancel="'+esc(b.id)+'">Stop it</button>':'')+'</div></div>'}).join("")
@@ -1025,16 +1050,15 @@ document.getElementById("bctest").addEventListener("click",function(){
   })});
 document.getElementById("bcsend").addEventListener("click",function(){
   var body=document.getElementById("bcbody").value.trim();
-  var n=document.getElementById("bccount").textContent;
-  var ask=castLive?("Send this to "+n+"? It cannot be unsent once it starts."):("Queue this? Only the test lines will be texted.");
+  var ask=castLive?("Send this to "+segCount()+" "+W("men","people")+", "+SEGWORDS[castSeg]+"? It cannot be unsent once it starts."):("Queue this? Only the test lines will be texted.");
   if(!window.confirm(ask+"\n\n"+body))return;
   castBusy=true;bcLen();bcMsg("","Queuing it.");
-  tpost("api/broadcast/queue",{body:body,by:SENDER}).then(function(j){
+  tpost("api/broadcast/queue",{body:body,by:SENDER,audience:castSeg}).then(function(j){
     castBusy=false;
     if(j.ok){
       document.getElementById("bcbody").value="";
       bcMsg("ok",j.test_only
-        ?("Queued for "+j.queued+" test "+(j.queued===1?"line":"lines")+". Nobody real was texted.")
+        ?("Queued for "+j.queued+" test "+(j.queued===1?"line":"lines")+" ("+(j.audience_label||"")+"). Nobody real was texted.")
         :("On its way to "+j.queued+". Each one goes out in their own waking hours; watch the count below."));
       loadBroadcast();
     } else bcMsg("bad",(j.problems||[j.error||"It was not queued."]).join("\n"));
