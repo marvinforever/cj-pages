@@ -252,6 +252,13 @@ td.msg i{color:var(--muted)}
 .bcrow .bcs{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:right;white-space:nowrap}
 .bcrow .bcs b{color:var(--go)} .bcrow .bcs i{font-style:normal;color:var(--alarm)}
 .bcsegs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}
+/* What came of a man: marked by hand from his thread (2026-11-03). */
+.markrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 18px;border-bottom:1px solid var(--rule-soft);font-size:13.5px;color:var(--muted)}
+.markrow .mk{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.markrow .done{color:var(--go);font-weight:600}
+.markrow button{background:none;border:1px solid var(--rule);border-radius:99px;padding:4px 12px;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
+.markrow button:hover{border-color:var(--brass-bright);color:var(--brass)}
+.markrow button[aria-pressed="true"]{background:var(--brass-wash);border-color:var(--brass-bright);color:var(--brass);font-weight:600}
 .ghost{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
 .ghost:hover{border-color:var(--brass-bright);color:var(--brass)} .ghost:disabled{opacity:.45;cursor:default}
 .rec{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
@@ -295,6 +302,7 @@ td.msg i{color:var(--muted)}
     </div>
     <div class="pane">
       <div class="phead" id="phead"><button class="back" id="back">Back</button><h2 id="pname">Pick someone</h2><span class="meta" id="pmeta"></span></div>
+      <div class="markrow" id="markrow" hidden></div>
       <div class="msgs" id="msgs"><div class="empty">Choose a name on the left to read the whole conversation.</div></div>
       <div class="composer" id="composer" hidden>
         <div class="draft" id="draft" hidden></div>
@@ -581,6 +589,7 @@ function loadThread(id){
         (m.kind==="conversational"?'<button class="coachme" data-about="'+esc(m.body)+'">Coach this reply</button>':'')}).join("");
     var mb=document.getElementById("msgs");mb.scrollTop=mb.scrollHeight;
     document.getElementById("composer").hidden=false;
+    renderMark(t);
     document.getElementById("flash").textContent="";
     loadQuick(id);
     loadDraft(id);
@@ -980,6 +989,29 @@ document.getElementById("tlist").addEventListener("click",function(e){
     if(!h)return;ta.value=h.body;tcount(k);tmsg(k,"","Put back into the box. Read it, then press Save.");ta.focus();
   }
 });
+
+/* What came of him. Nothing else writes this, so the Numbers tab only knows
+   what somebody marks here. Bookings happen in Calendly, which does not tell
+   the board; a webhook can set the same field later without changing this. */
+function renderMark(t){
+  var el=document.getElementById("markrow");
+  if(!t){el.hidden=true;return}
+  el.hidden=false;
+  var v=t.converted||"";
+  var when_=t.converted_at?(" on "+stamp(t.converted_at)):"";
+  el.innerHTML='<span class="mk">What came of it</span>'+
+    '<button data-mark="call_booked" aria-pressed="'+(v==="call_booked")+'">Booked the call</button>'+
+    '<button data-mark="enrolled" aria-pressed="'+(v==="enrolled")+'">Enrolled</button>'+
+    (v?'<span class="done">Marked '+(v==="call_booked"?"booked":"enrolled")+esc(when_)+'</span><button data-mark="none">Undo</button>':'<span>Not marked yet</span>');
+}
+document.getElementById("markrow").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-mark]");if(!b||!current)return;
+  var state=b.getAttribute("data-mark");
+  fetch(API+"api/converted?"+Q(),{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({lead_id:current,state:state,by:SENDER})})
+   .then(function(r){return r.json()}).then(function(j){
+     if(j.ok){loadThread(current);if(numbersLoaded)loadNumbers()}
+     else document.getElementById("flash").textContent=j.error||"That did not save."}) });
 
 /* ---------------- broadcast ---------------- */
 /* One message to everyone still in the series. The engine queues it and sends
