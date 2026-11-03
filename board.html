@@ -243,6 +243,14 @@ td.msg i{color:var(--muted)}
 .tgroup:first-child{margin-top:0}
 .tguide{background:var(--brass-wash);border:1px solid var(--brass-bright);padding:12px 16px;font-size:14px;margin-bottom:18px}
 .tguide b{color:var(--brass)}
+/* Broadcast tab */
+.bcwarn{background:var(--surface-2);border:1px solid var(--alarm);padding:12px 16px;font-size:14px;margin-bottom:18px}
+.bcwarn b{color:var(--alarm)}
+.bcrow{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:start;background:var(--surface);border:1px solid var(--rule);padding:12px 16px;margin-bottom:10px}
+.bcrow pre{margin:0;white-space:pre-wrap;font:inherit;font-size:13.5px;color:var(--ink-soft)}
+.bcrow .bcm{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);margin-bottom:5px}
+.bcrow .bcs{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:right;white-space:nowrap}
+.bcrow .bcs b{color:var(--go)} .bcrow .bcs i{font-style:normal;color:var(--alarm)}
 .ghost{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
 .ghost:hover{border-color:var(--brass-bright);color:var(--brass)} .ghost:disabled{opacity:.45;cursor:default}
 .rec{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
@@ -268,6 +276,7 @@ td.msg i{color:var(--muted)}
       <button class="tab" role="tab" id="t-num" aria-selected="false" aria-controls="numbers">Numbers</button>
       <button class="tab" role="tab" id="t-rec" aria-selected="false" aria-controls="recordings">Recordings</button>
       <button class="tab" role="tab" id="t-txt" aria-selected="false" aria-controls="texts">Texts</button>
+      <button class="tab" role="tab" id="t-cast" aria-selected="false" aria-controls="broadcast">Broadcast</button>
       <button class="tab" id="t-prog" aria-selected="false" title="Paid programs: who is enrolled, sessions, worksheets">Programs</button>
     </nav>
     <span class="live" id="live"><span class="dot"></span>loading</span>
@@ -348,6 +357,25 @@ td.msg i{color:var(--muted)}
     <div class="tguide" id="tguide"><b>Every text a man receives, in your words.</b> Change any of them here and it is live on the next send. Words in curly braces, like <span class="mono">{link}</span>, are filled in for each man and have to stay. <b>Text me this</b> sends the draft to your own phone first, so you can read it the way he will. Every earlier version is kept under History.</div>
     <div id="tlist"><div class="tempty">Loading.</div></div>
     <div class="coachlist" id="coachlist"></div>
+  </div>
+  <div class="numbers" id="broadcast" role="tabpanel" hidden>
+    <div class="tguide" id="bcguide"><b>One message to everyone still in the series.</b> Write it, send it to your own phone first, then send it to everyone. It goes out in each person's own waking hours, so nobody is woken at five in the morning. Replies come back to your Conversations tab as usual.</div>
+    <div class="bcwarn" id="bcgate" hidden></div>
+    <div class="txt">
+      <div class="th"><span class="tl">Write the message</span><span class="tb" id="bccount"></span></div>
+      <div class="thelp" id="bcwho">Counting who is in the series.</div>
+      <textarea id="bcbody" spellcheck="true" placeholder="Write it the way you would text one person."></textarea>
+      <div class="tact">
+        <button class="ghost" id="bctest">Text me this</button>
+        <button class="send" id="bcsend" disabled>Send to everyone</button>
+        <span class="tcount" id="bclen"></span>
+      </div>
+      <div class="tmsg" id="bcmsg"></div>
+    </div>
+    <section class="sect">
+      <div class="shead"><h2>What you have sent</h2></div>
+      <div id="bclist"><div class="tempty">Nothing yet.</div></div>
+    </section>
   </div>
   <div class="numbers" id="numbers" role="tabpanel" hidden>
     <section class="sect">
@@ -444,7 +472,7 @@ function stamp(iso){var d=new Date(iso);
 var SHORT={drip:"series",welcome:"series",invite:"series",invite_nudge:"series",done_reply:"series",
   build_reply:"her calendar",identity:"approved answer",help:"carrier",stop_confirm:"opt-out",
   crisis_ack:"crisis message",conversational:"assistant",invitation:"assistant",
-  stalled_nudge:"assistant",human:"you",voice_note:"you",
+  stalled_nudge:"assistant",human:"you",voice_note:"you",broadcast:"everyone",
   program_invite:"program",program_reminder:"program",program_welcome:"program",program_orientation:"program",
   program_session:"program",program_integration:"program",program_complete:"program",program_done_reply:"program",
   program_already_in:"program"};
@@ -454,12 +482,13 @@ var VOICE={drip:"sent by the series",welcome:"sent by the series",invite:"sent b
   stop_confirm:"opt-out confirmation",crisis_ack:"the crisis message",
   conversational:"written by the assistant",invitation:"written by the assistant",
   human:"written by you",voice_note:"a voice note from you",stalled_nudge:"written by the assistant",
+  broadcast:"sent to everyone in the series",
   program_invite:"sent by the program",program_reminder:"sent by the program",program_welcome:"sent by the program",
   program_orientation:"sent by the program",program_session:"sent by the program",program_integration:"sent by the program",
   program_complete:"sent by the program",program_done_reply:"sent by the program",program_already_in:"sent by the program"};
 /* Which of the four groups a thread is in. First line that fits wins, so
    every thread lands in exactly one. */
-var SENT_KINDS={human:1,voice_note:1,conversational:1,invitation:1,stalled_nudge:1,identity:1,build_reply:1,done_reply:1};
+var SENT_KINDS={human:1,voice_note:1,broadcast:1,conversational:1,invitation:1,stalled_nudge:1,identity:1,build_reply:1,done_reply:1};
 function statusOf(t){
   /* needs_her is the board's own flag, the one behind the red tag and the
      counter in the header. Including it keeps all three in agreement, and
@@ -946,8 +975,78 @@ document.getElementById("tlist").addEventListener("click",function(e){
   }
 });
 
+/* ---------------- broadcast ---------------- */
+/* One message to everyone still in the series. The engine queues it and sends
+   it in each person's own waking hours; this page only composes and watches. */
+var castLoaded=false,castLive=false,castBusy=false;
+function bcMsg(cls,text){var e=document.getElementById("bcmsg");e.className="tmsg"+(cls?" "+cls:"");e.textContent=text||""}
+function bcLen(){
+  var n=document.getElementById("bcbody").value.trim().length;
+  var c=document.getElementById("bclen");
+  c.textContent=n+" of 600";c.className="tcount"+(n>600?" over":"");
+  document.getElementById("bcsend").disabled=castBusy||n<4||n>600;
+}
+function loadBroadcast(){
+  castLoaded=true;
+  fetch(API+"api/broadcast?"+Q()).then(function(r){return r.json()}).then(function(j){
+    if(!j.ok)return;
+    castLive=!!j.live;
+    var a=j.audience||{total:0};
+    document.getElementById("bccount").textContent=a.total+" "+W(a.total===1?"man":"men",a.total===1?"person":"people");
+    document.getElementById("bcwho").textContent=
+      a.total===0?("Nobody has said yes yet, so there is nobody to write to.")
+      :(a.total+" "+W(a.total===1?"man is":"men are",a.total===1?"person is":"people are")+" still in the series. "
+        +(a.finished?a.finished+" finished all the mornings. ":"")
+        +(a.mid?a.mid+" still receiving them. ":"")
+        +(a.paused?a.paused+" paused, and will be skipped. ":""));
+    var gate=document.getElementById("bcgate");
+    if(!castLive){
+      gate.hidden=false;
+      gate.innerHTML="<b>Sending to real people is switched off.</b> You can write, test and queue a broadcast now, and only the test lines will be texted. Mark turns it on when the carrier registration is confirmed."
+        +(j.tests?" There "+(j.tests===1?"is 1 test line":"are "+j.tests+" test lines")+" to practise on.":"");
+    } else { gate.hidden=true }
+    var L=document.getElementById("bclist");
+    L.innerHTML=(j.broadcasts&&j.broadcasts.length)?j.broadcasts.map(function(b){
+      var state=b.status==="done"?"<b>sent</b>":b.status==="cancelled"?"<i>cancelled</i>":esc(b.status);
+      return '<div class="bcrow"><div><div class="bcm">'+esc(when(b.created_at))+(b.created_by?" · "+esc(b.created_by):"")+(b.test_only?" · test lines only":"")+'</div><pre>'+esc(b.body)+'</pre></div>'+
+        '<div class="bcs">'+state+'<br>'+(b.sent||0)+' of '+(b.total||0)+' sent'+
+        (b.failed?'<br><i>'+b.failed+' failed</i>':'')+(b.skipped?'<br>'+b.skipped+' skipped':'')+
+        ((b.status==="queued"||b.status==="sending")?'<br><button class="ghost" data-bccancel="'+esc(b.id)+'">Stop it</button>':'')+'</div></div>'}).join("")
+      :'<div class="tempty">Nothing yet.</div>';
+    bcLen();
+  }).catch(function(){})}
+document.getElementById("bcbody").addEventListener("input",bcLen);
+document.getElementById("bctest").addEventListener("click",function(){
+  var body=document.getElementById("bcbody").value;
+  bcMsg("","Sending it to you.");
+  tpost("api/broadcast/test",{body:body}).then(function(j){
+    if(j.ok)bcMsg("ok","Sent to the phone ending "+j.to+". Read it there before you send it to anyone else.");
+    else bcMsg("bad",(j.problems||[j.error||"It did not send."]).join("\n"));
+  })});
+document.getElementById("bcsend").addEventListener("click",function(){
+  var body=document.getElementById("bcbody").value.trim();
+  var n=document.getElementById("bccount").textContent;
+  var ask=castLive?("Send this to "+n+"? It cannot be unsent once it starts."):("Queue this? Only the test lines will be texted.");
+  if(!window.confirm(ask+"\n\n"+body))return;
+  castBusy=true;bcLen();bcMsg("","Queuing it.");
+  tpost("api/broadcast/queue",{body:body,by:SENDER}).then(function(j){
+    castBusy=false;
+    if(j.ok){
+      document.getElementById("bcbody").value="";
+      bcMsg("ok",j.test_only
+        ?("Queued for "+j.queued+" test "+(j.queued===1?"line":"lines")+". Nobody real was texted.")
+        :("On its way to "+j.queued+". Each one goes out in their own waking hours; watch the count below."));
+      loadBroadcast();
+    } else bcMsg("bad",(j.problems||[j.error||"It was not queued."]).join("\n"));
+    bcLen();
+  })});
+document.getElementById("bclist").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-bccancel]");if(!b)return;
+  if(!window.confirm("Stop this broadcast? Whatever has already gone out stays out."))return;
+  tpost("api/broadcast/cancel",{id:b.getAttribute("data-bccancel")}).then(function(){loadBroadcast()})});
+
 /* ---------------- tabs ---------------- */
-var TABS={conv:{el:"cols",btn:"t-conv",hash:""},num:{el:"numbers",btn:"t-num",hash:"#numbers"},rec:{el:"recordings",btn:"t-rec",hash:"#recordings"},txt:{el:"texts",btn:"t-txt",hash:"#texts"}};
+var TABS={conv:{el:"cols",btn:"t-conv",hash:""},num:{el:"numbers",btn:"t-num",hash:"#numbers"},rec:{el:"recordings",btn:"t-rec",hash:"#recordings"},txt:{el:"texts",btn:"t-txt",hash:"#texts"},cast:{el:"broadcast",btn:"t-cast",hash:"#broadcast"}};
 function showTab(which){
   Object.keys(TABS).forEach(function(k){
     document.getElementById(TABS[k].el).hidden=(k!==which);
@@ -955,15 +1054,17 @@ function showTab(which){
   if(which==="num"&&!numbersLoaded)loadNumbers();
   if(which==="rec"&&!recLoaded)loadRecordings();
   if(which==="txt"&&!textsLoaded)loadTexts();
+  if(which==="cast")loadBroadcast();
   var h=TABS[which].hash;
   if(h){ if(location.hash!==h)history.replaceState(null,"",h) }
   else if(location.hash){ history.replaceState(null,"",location.pathname+location.search) }
 }
-function tabFromHash(){return location.hash==="#numbers"?"num":location.hash==="#recordings"?"rec":location.hash==="#texts"?"txt":"conv"}
+function tabFromHash(){return location.hash==="#numbers"?"num":location.hash==="#recordings"?"rec":location.hash==="#texts"?"txt":location.hash==="#broadcast"?"cast":"conv"}
 document.getElementById("t-conv").addEventListener("click",function(){showTab("conv")});
 document.getElementById("t-num").addEventListener("click",function(){showTab("num")});
 document.getElementById("t-rec").addEventListener("click",function(){showTab("rec")});
 document.getElementById("t-txt").addEventListener("click",function(){showTab("txt")});
+document.getElementById("t-cast").addEventListener("click",function(){showTab("cast")});
 /* The Programs page (RIC and the courses after it) opens with the same key. */
 document.getElementById("t-prog").addEventListener("click",function(){
   location.href="programs.html?key="+encodeURIComponent(key)+(brand?"&b="+encodeURIComponent(brand):"")+(showTests?"&tests=1":"")});
@@ -972,5 +1073,7 @@ window.addEventListener("hashchange",function(){showTab(tabFromHash())});
 loadBrands().then(function(){loadList();showTab(tabFromHash());
   /* &lead=<id> opens that thread (the Programs page links here). */
   if(qs.get("lead")){showTab("conv");loadThread(qs.get("lead"))}});
-setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current); if(numbersLoaded&&!document.getElementById("numbers").hidden)loadNumbers();} },20000);
+setInterval(function(){ if(!typing){loadList(); if(current)loadThread(current); if(numbersLoaded&&!document.getElementById("numbers").hidden)loadNumbers();
+  /* While a broadcast is going out, the counts move on their own. */
+  if(castLoaded&&!document.getElementById("broadcast").hidden&&!document.getElementById("bcbody").value.trim())loadBroadcast();} },20000);
 </script></body></html>
