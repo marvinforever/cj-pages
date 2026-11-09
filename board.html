@@ -246,6 +246,9 @@ td.msg i{color:var(--muted)}
 /* Broadcast tab */
 .bcwarn{background:var(--surface-2);border:1px solid var(--alarm);padding:12px 16px;font-size:14px;margin-bottom:18px}
 .bcwarn b{color:var(--alarm)}
+/* Live, with the carrier's content rule in front of her (Mark, 2026-11-09). */
+.bcnote{background:var(--brass-wash);border:1px solid var(--brass-bright);padding:12px 16px;font-size:14px;margin-bottom:18px}
+.bcnote b{color:var(--brass)}
 .bcrow{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:start;background:var(--surface);border:1px solid var(--rule);padding:12px 16px;margin-bottom:10px}
 .bcrow pre{margin:0;white-space:pre-wrap;font:inherit;font-size:13.5px;color:var(--ink-soft)}
 .bcrow .bcm{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);margin-bottom:5px}
@@ -1057,11 +1060,19 @@ function loadBroadcast(){
     castAudience=a;
     renderSeg(a);
     var gate=document.getElementById("bcgate");
+    gate.hidden=false;
     if(!castLive){
-      gate.hidden=false;
+      gate.className="bcwarn";
       gate.innerHTML="<b>Sending to real people is switched off.</b> You can write, test and queue a broadcast now, and only the test lines will be texted. Mark turns it on when the carrier registration is confirmed."
         +(j.tests?" There "+(j.tests===1?"is 1 test line":"are "+j.tests+" test lines")+" to practise on.":"");
-    } else { gate.hidden=true }
+    } else {
+      /* The carrier registered this number for notices to people who opted
+         in, not for marketing (Mark, from Telnyx's own record, 2026-11-09).
+         Carrier filters look for the pitch, so the rule lives here, where
+         she writes, rather than in a message nobody can find later. */
+      gate.className="bcnote";
+      gate.innerHTML="<b>What can go out.</b> A note to the people who said yes is what this number is registered for: a new recording, a thought you wanted to send them, something for the people in the series. A pitch is not. No price, no enrolment push, no join-this, until Mark updates the registration. Carrier filters look for exactly that, and the whole number pays for it, not just the one text.";
+    }
     var L=document.getElementById("bclist");
     L.innerHTML=(j.broadcasts&&j.broadcasts.length)?j.broadcasts.map(function(b){
       var state=b.status==="done"?"<b>sent</b>":b.status==="cancelled"?"<i>cancelled</i>":esc(b.status);
