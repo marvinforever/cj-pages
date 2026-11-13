@@ -262,6 +262,8 @@ td.msg i{color:var(--muted)}
 .markrow button{background:none;border:1px solid var(--rule);border-radius:99px;padding:4px 12px;font:inherit;font-size:12.5px;color:var(--ink-soft);cursor:pointer}
 .markrow button:hover{border-color:var(--brass-bright);color:var(--brass)}
 .markrow button[aria-pressed="true"]{background:var(--brass-wash);border-color:var(--brass-bright);color:var(--brass);font-weight:600}
+.markrow .tel{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--brass);font-weight:600;text-decoration:none;border-bottom:1px solid var(--brass-bright)}
+.markrow .sep{opacity:.35}
 .ghost{background:none;border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font:inherit;font-size:13.5px;color:var(--ink-soft);cursor:pointer}
 .ghost:hover{border-color:var(--brass-bright);color:var(--brass)} .ghost:disabled{opacity:.45;cursor:default}
 .rec{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
@@ -996,18 +998,42 @@ document.getElementById("tlist").addEventListener("click",function(e){
 /* What came of him. Nothing else writes this, so the Numbers tab only knows
    what somebody marks here. Bookings happen in Calendly, which does not tell
    the board; a webhook can set the same field later without changing this. */
+var shownPhone={};
 function renderMark(t){
   var el=document.getElementById("markrow");
   if(!t){el.hidden=true;return}
   el.hidden=false;
   var v=t.converted||"";
   var when_=t.converted_at?(" on "+stamp(t.converted_at)):"";
+  var shown=shownPhone[t.lead_id];
   el.innerHTML='<span class="mk">What came of it</span>'+
     '<button data-mark="call_booked" aria-pressed="'+(v==="call_booked")+'">Booked the call</button>'+
     '<button data-mark="enrolled" aria-pressed="'+(v==="enrolled")+'">Enrolled</button>'+
-    (v?'<span class="done">Marked '+(v==="call_booked"?"booked":"enrolled")+esc(when_)+'</span><button data-mark="none">Undo</button>':'<span>Not marked yet</span>');
+    (v?'<span class="done">Marked '+(v==="call_booked"?"booked":"enrolled")+esc(when_)+'</span><button data-mark="none">Undo</button>':'<span>Not marked yet</span>')+
+    '<span class="sep">|</span>'+
+    (shown
+      ? '<a class="tel" href="tel:'+esc(shown)+'">'+esc(telFmt(shown))+'</a><button data-hidephone="1">Hide</button>'
+      : '<button data-showphone="1">Show number</button>');
+}
+/* +17204417634 reads as (720) 441-7634. Anything that is not a US ten digit
+   number is left exactly as it came. */
+function telFmt(p){
+  var d=String(p||"").replace(/[^0-9]/g,"");
+  if(d.length===11&&d.charAt(0)==="1")d=d.slice(1);
+  return d.length===10?("("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6)):String(p);
 }
 document.getElementById("markrow").addEventListener("click",function(e){
+  /* The number, on request. It is never in the page until she asks for it,
+     and asking is logged on the engine (Christine, 2026-11-13). */
+  if(e.target.closest("button[data-showphone]")&&current){
+    var who=current;
+    fetch(API+"api/phone?"+Q()+"&lead_id="+encodeURIComponent(who))
+     .then(function(r){return r.json()}).then(function(j){
+       if(j.ok&&j.phone){shownPhone[who]=j.phone;if(current===who)loadThread(who)}
+       else document.getElementById("flash").textContent=j.error||"Could not read that number."});
+    return;
+  }
+  if(e.target.closest("button[data-hidephone]")&&current){delete shownPhone[current];loadThread(current);return}
   var b=e.target.closest("button[data-mark]");if(!b||!current)return;
   var state=b.getAttribute("data-mark");
   fetch(API+"api/converted?"+Q(),{method:"POST",headers:{"Content-Type":"application/json"},
