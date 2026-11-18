@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The High Margin Life Assessment | Christine Jewell</title>
+<meta name="description" content="Three factors determine whether you can live a High Margin Life. Find out which one you're missing.">
+<meta name="theme-color" content="#0F1110">
+<meta property="og:title" content="The High Margin Life Assessment">
+<meta property="og:description" content="Three factors determine whether you can live a High Margin Life. Find out which one you're missing.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&family=Cinzel:wght@500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#0F1110; --panel:#16191A; --stone:#E7E1D5; --brass:#B8945C; --mute:#9A9C95; --rule:#2C2F2C; --edge:#3A3D39;
+  --serif:'Libre Caslon Text',Georgia,serif; --caps:'Cinzel',Georgia,serif; --sans:'Jost',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--black);color:var(--stone);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{min-height:100vh;min-height:100dvh}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:560px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:max(28px,env(safe-area-inset-top)) 24px max(28px,env(safe-area-inset-bottom));display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column;animation:fade .35s ease}
+.screen.on{display:flex}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.caps{font-family:var(--caps);font-weight:600;letter-spacing:.22em;font-size:12px;color:var(--brass);text-transform:uppercase}
+.mute{color:var(--mute)}
+/* progress */
+.prog{display:flex;gap:10px}
+.seg{flex:1;display:flex;flex-direction:column;gap:8px}
+.seg span{font-family:var(--caps);font-weight:600;font-size:12px;letter-spacing:.15em;color:var(--mute)}
+.seg.live span{color:var(--brass)}
+.bar{height:3px;background:var(--rule)}
+.bar i{display:block;height:100%;width:0;background:var(--brass);transition:width .35s ease}
+.meta{display:flex;justify-content:space-between;align-items:baseline;margin-top:36px}
+.meta .count{font-size:13px;color:var(--mute)}
+h1,h2{font-family:var(--serif);margin:0}
+.q{font-weight:400;font-size:clamp(25px,6.6vw,32px);line-height:1.35;margin-top:24px}
+.scale{margin-top:auto;padding-top:36px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.grid button{height:60px;background:none;border:1.5px solid var(--edge);font-family:var(--caps);font-weight:600;font-size:20px;transition:border-color .15s,background .15s}
+.grid button:hover{border-color:var(--brass)}
+.grid button.sel{border-color:var(--brass);background:rgba(184,148,92,.14)}
+.anchors{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.05em;color:var(--mute);margin-top:14px}
+.back{margin-top:22px;min-height:44px;background:none;border:none;color:var(--mute);font-size:14px;padding:0;text-align:left;align-self:flex-start}
+.back[hidden]{display:none}
+/* chapter */
+.chapter{margin:auto 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
+.numeral{font-family:var(--caps);font-weight:600;font-size:72px;line-height:1;color:var(--brass)}
+.dash{width:48px;height:2px;background:var(--brass)}
+.chapter h2{font-weight:700;font-size:34px;line-height:1.2}
+.chapter p{font-family:var(--serif);font-size:18px;line-height:1.6;color:var(--mute);max-width:380px;margin:0}
+.btn{width:100%;min-height:58px;background:var(--brass);color:var(--black);border:none;font-family:var(--sans);font-weight:600;font-size:14px;letter-spacing:.2em;text-transform:uppercase}
+.btn:disabled{opacity:.6}
+.btn.ghost{background:none;border:1.5px solid var(--edge);color:var(--stone)}
+.foot{margin-top:auto;padding-top:28px;display:flex;flex-direction:column;gap:12px}
+/* text inputs */
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{font-size:12px;letter-spacing:.16em;font-weight:500;color:var(--mute);text-transform:uppercase}
+.field input,.field textarea{background:none;border:none;border-bottom:1.5px solid #4A4D48;color:var(--stone);font-family:var(--sans);font-size:17px;padding:10px 0;border-radius:0;outline:none}
+.field textarea{border:1.5px solid #4A4D48;padding:14px;min-height:130px;resize:vertical;font-size:16px;line-height:1.5}
+.field input:focus,.field textarea:focus{border-color:var(--brass)}
+.fields{display:flex;flex-direction:column;gap:26px;margin-top:36px}
+.lead{font-family:var(--serif);font-size:18px;line-height:1.55;color:var(--mute);margin:16px 0 0}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.err{color:#E3A08A;font-size:14px;min-height:20px}
+.small{font-size:12px;color:var(--mute);text-align:center}
+/* result */
+.rows{display:flex;flex-direction:column;gap:20px;margin-top:26px}
+.row .top{display:flex;justify-content:space-between;align-items:baseline}
+.row .name{display:flex;gap:12px;align-items:baseline;font-family:var(--serif);font-weight:700;font-size:19px}
+.row .name b{font-family:var(--caps);font-weight:600;font-size:14px;color:var(--brass);width:28px}
+.row .score{font-family:var(--caps);font-weight:600;font-size:22px}
+.row .score small{font-size:12px;color:var(--mute)}
+.row .track{height:4px;background:var(--rule);margin-top:8px}
+.row .track i{display:block;height:100%;background:var(--stone);width:0;transition:width .9s ease}
+.row.low .name,.row.low .score{color:var(--brass)}
+.row.low .track i{background:var(--brass)}
+.verdict{margin-top:34px}
+.verdict h2{font-weight:700;font-size:28px;line-height:1.25;margin-top:10px}
+.verdict p{font-family:var(--serif);font-size:17px;line-height:1.65;color:#C9C4B8;margin:14px 0 0}
+.video{margin-top:28px;width:100%;aspect-ratio:16/9;background:var(--panel);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.video iframe,.video video{width:100%;height:100%;border:0}
+.vlabel{margin-top:10px;font-size:12px;letter-spacing:.06em;color:var(--mute)}
+.overall{display:flex;align-items:baseline;gap:10px;margin-top:14px}
+.overall strong{font-family:var(--caps);font-weight:600;font-size:52px;line-height:1}
+.overall span{color:var(--mute);font-size:14px}
+@media (min-width:700px){.wrap{padding-top:56px;padding-bottom:56px}}
+</style>
+</head>
+<body>
+<main class="wrap" id="app">
+
+  <!-- Questions -->
+  <section class="screen" id="s-q" aria-live="polite">
+    <div class="prog" aria-hidden="true">
+      <div class="seg" data-seg="0"><span>I</span><div class="bar"><i></i></div></div>
+      <div class="seg" data-seg="1"><span>II</span><div class="bar"><i></i></div></div>
+      <div class="seg" data-seg="2"><span>III</span><div class="bar"><i></i></div></div>
+    </div>
+    <div class="meta"><div class="caps" id="q-factor"></div><div class="count" id="q-count"></div></div>
+    <h1 class="q" id="q-text"></h1>
+    <div class="scale">
+      <div class="grid" id="q-grid" role="group" aria-label="Rate from 1, not true of me, to 10, completely true"></div>
+      <div class="anchors"><span>Not true of me</span><span>Completely true</span></div>
+    </div>
+    <button class="back" id="q-back" type="button">Back</button>
+  </section>
+
+  <!-- Between factors -->
+  <section class="screen" id="s-ch">
+    <div class="chapter">
+      <div class="numeral" id="ch-num"></div>
+      <div class="dash"></div>
+      <h2 id="ch-title"></h2>
+      <p id="ch-line"></p>
+    </div>
+    <div class="foot"><button class="btn" id="ch-go" type="button">Continue</button></div>
+  </section>
+
+  <!-- Open question -->
+  <section class="screen" id="s-open">
+    <div class="caps">One last question</div>
+    <h1 class="q">If one thing were different 90 days from now, what would you want it to be?</h1>
+    <div class="fields">
+      <div class="field">
+        <label for="open">In your own words (optional)</label>
+        <textarea id="open" maxlength="2000"></textarea>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn" id="open-go" type="button">Continue</button>
+      <button class="back" id="open-back" type="button">Back</button>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="screen" id="s-contact">
+    <div class="prog" aria-hidden="true">
+      <div class="seg live"><span>I</span><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="seg live"><span>II</span><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="seg live"><span>III</span><div class="bar"><i style="width:100%"></i></div></div>
+    </div>
+    <div style="margin-top:44px">
+      <div class="caps">Assessment complete</div>
+      <h1 style="font-weight:700;font-size:34px;line-height:1.2;margin-top:14px">Your results are ready.</h1>
+      <p class="lead">Tell us where to send them, along with a personal message from Christine about what your score means.</p>
+    </div>
+    <form id="contact" novalidate>
+      <div class="fields">
+        <div class="field"><label for="first">First name</label><input id="first" name="first" autocomplete="given-name" required></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" required></div>
+        <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel"></div>
+        <div class="hp" aria-hidden="true"><label for="website">Website</label><input id="website" name="website" tabindex="-1" autocomplete="off"></div>
+      </div>
+      <div class="foot">
+        <div class="err" id="err" role="alert"></div>
+        <button class="btn" id="submit" type="submit">See my results</button>
+        <div class="small">Your answers stay private.</div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Result -->
+  <section class="screen" id="s-result">
+    <div class="caps">Your High Margin Score</div>
+    <div class="overall"><strong id="r-overall"></strong><span>out of 100</span></div>
+    <div class="rows" id="r-rows"></div>
+    <div class="verdict">
+      <div class="caps" id="r-gap"></div>
+      <h2 id="r-head"></h2>
+      <p id="r-body"></p>
+    </div>
+    <div class="video" id="r-video"></div>
+    <div class="vlabel">A message from Christine about your result</div>
+    <div class="foot">
+      <a class="btn" id="r-book" href="#" style="display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none">Book a conversation</a>
+    </div>
+  </section>
+</main>
+
+<script>
+// ── Settings ──────────────────────────────────────────────────────────────
+// Everything Christine or the team will change lives here.
+const CONFIG = {
+  endpoint: "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/hml-assessment",
+  version: "v1-draft",
+  bookingUrl: "",                 // her calendar (with the qualifying questions on the booking form)
+  metaPixelId: "",                // set to fire PageView, AssessmentStart and Lead
+  videos: { attractor: "", stabilizer: "", x_factor: "" }, // embed URLs (YouTube/Vimeo) or .mp4
+};
+
+// Draft questions, 8 per factor, built on the 9 elements in Christine's
+// 3 Factors framework. For Christine to rewrite.
+const FACTORS = [
+  { key: "attractor", numeral: "I", name: "The Attractor Factor",
+    line: "Vision, identity and values. Getting clear on what you're building, and who you are while you build it.",
+    qs: [
+      ["a1", "I could describe, in detail, the life I'm building at home, not just the business I'm building at work."],
+      ["a2", "My wife and I want the same future, and we've actually said it out loud to each other."],
+      ["a3", "I know what \"enough\" looks like for me, at work and at home."],
+      ["a4", "Who I am doesn't rise and fall with how the business performed this week."],
+      ["a5", "I can rest without feeling like I have to earn it first."],
+      ["a6", "The man my family gets at night is the same man my team gets during the day."],
+      ["a7", "My calendar from last week would tell a stranger exactly what I value most."],
+      ["a8", "When work and home pull on the same hour, I already know which one wins, and so does my family."],
+    ] },
+  { key: "stabilizer", numeral: "II", name: "The Stabilizer Factor",
+    line: "Boundaries, playbooks and communication. The structure that lets what you've built hold steady.",
+    qs: [
+      ["s1", "When I walk into my house at night, I actually leave work at the door."],
+      ["s2", "I protect time with my wife and kids the way I protect my most important meeting."],
+      ["s3", "I say no to good things so I have room for the best things."],
+      ["s4", "My wife and I have clear agreements about who carries what, so neither of us is keeping score."],
+      ["s5", "My business runs on systems, not on me being available every minute."],
+      ["s6", "When something's off between my wife and me, we talk it through within a day instead of letting it sit."],
+      ["s7", "My wife would say I really listen to her, not just wait for my turn to talk."],
+      ["s8", "We have a regular rhythm, even a short one, for checking in on how we're actually doing."],
+    ] },
+  { key: "x_factor", numeral: "III", name: "The X Factor",
+    line: "Alignment, discernment and multiplication. Moving with God, and raising up the people closest to you.",
+    qs: [
+      ["x1", "My biggest decisions come from peace, not pressure."],
+      ["x2", "The pace I'm keeping feels led, not driven."],
+      ["x3", "My faith shapes how I run my business, not just how I spend Sunday."],
+      ["x4", "I can tell an opportunity from a distraction, and I say no to the second one."],
+      ["x5", "I know when to push forward and when to wait, and I trust that sense."],
+      ["x6", "The people closest to me, at home and at work, are growing because of how I lead them."],
+      ["x7", "If I stepped away for two weeks, my home and my business would both run well without me holding them together."],
+      ["x8", "I'm intentionally building into the next generation, my kids and the leaders around me."],
+    ] },
+];
+
+// Draft result copy, one per lowest factor. For Christine to rewrite.
+const RESULTS = {
+  attractor: { head: "Your margin is leaking at the foundation.",
+    body: "The Attractor Factor is vision, identity and values. It's knowing what you're building at home, and who you are apart from what you produce. When it runs low, everything built on top of it costs more than it should. The good news is that this is where real change starts." },
+  stabilizer: { head: "You're building faster than you can hold.",
+    body: "The Stabilizer Factor is boundaries, playbooks and communication. It's the structure that lets what you've built at home and at work hold steady without you carrying all of it. When it runs low, success starts to feel heavier instead of lighter." },
+  x_factor: { head: "You've built it. Now it has to multiply.",
+    body: "The X Factor is alignment, discernment and multiplication. It's moving with God instead of ahead of Him, knowing what to say no to, and raising up the people closest to you. When it runs low, everything still depends on you, and that's the ceiling." },
+};
+
+// ── State ─────────────────────────────────────────────────────────────────
+const ALL = FACTORS.flatMap((f, fi) => f.qs.map(([id, text], qi) => ({ id, text, fi, qi })));
+const answers = {};
+let idx = 0;
+let started = false;
+const utm = {};
+new URLSearchParams(location.search).forEach((v, k) => { if (/^(utm_|fbclid|gclid)/.test(k)) utm[k] = v.slice(0, 200); });
+
+const $ = (id) => document.getElementById(id);
+function show(id) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === id));
+  window.scrollTo(0, 0);
+}
+
+// Meta pixel, only if an id is set.
+function pixel(ev, custom) {
+  if (!CONFIG.metaPixelId || !window.fbq) return;
+  custom ? fbq("trackCustom", ev) : fbq("track", ev);
+}
+if (CONFIG.metaPixelId) {
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq("init", CONFIG.metaPixelId); fbq("track", "PageView");
+}
+
+// ── Questions ─────────────────────────────────────────────────────────────
+const grid = $("q-grid");
+for (let n = 1; n <= 10; n++) {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = n; b.dataset.v = n; b.setAttribute("aria-label", String(n));
+  b.addEventListener("click", () => pick(n));
+  grid.appendChild(b);
+}
+
+function renderQ() {
+  const q = ALL[idx];
+  const f = FACTORS[q.fi];
+  $("q-factor").textContent = f.name;
+  $("q-count").textContent = `${idx + 1} of ${ALL.length}`;
+  $("q-text").textContent = q.text;
+  grid.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", Number(b.dataset.v) === answers[q.id]));
+  document.querySelectorAll("#s-q .seg").forEach((seg, si) => {
+    const done = si < q.fi ? 1 : si > q.fi ? 0 : q.qi / f.qs.length;
+    seg.querySelector("i").style.width = `${Math.round(done * 100)}%`;
+    seg.classList.toggle("live", si <= q.fi);
+  });
+  $("q-back").hidden = idx === 0;
+  show("s-q");
+}
+
+let locked = false;
+function pick(v) {
+  if (locked) return;
+  const q = ALL[idx];
+  answers[q.id] = v;
+  if (!started) { started = true; pixel("AssessmentStart", true); }
+  grid.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", Number(b.dataset.v) === v));
+  locked = true;
+  setTimeout(() => { locked = false; next(); }, 260);
+}
+
+function next() {
+  const cur = ALL[idx];
+  if (idx === ALL.length - 1) { show("s-open"); return; }
+  idx++;
+  if (ALL[idx].fi !== cur.fi) { chapter(ALL[idx].fi); return; }
+  renderQ();
+}
+
+function chapter(fi) {
+  const f = FACTORS[fi];
+  $("ch-num").textContent = f.numeral;
+  $("ch-title").textContent = f.name;
+  $("ch-line").textContent = f.line;
+  show("s-ch");
+}
+$("ch-go").addEventListener("click", renderQ);
+$("q-back").addEventListener("click", () => { if (idx > 0) { idx--; renderQ(); } });
+$("open-back").addEventListener("click", () => { idx = ALL.length - 1; renderQ(); });
+$("open-go").addEventListener("click", () => show("s-contact"));
+
+document.addEventListener("keydown", (e) => {
+  if (!$("s-q").classList.contains("on")) return;
+  if (/^[1-9]$/.test(e.key)) pick(Number(e.key));
+  else if (e.key === "0") pick(10);
+});
+
+// ── Submit ────────────────────────────────────────────────────────────────
+$("contact").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const first = $("first").value.trim();
+  const email = $("email").value.trim();
+  const err = $("err");
+  err.textContent = "";
+  if (!first) { err.textContent = "Please add your first name."; $("first").focus(); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { err.textContent = "Please enter a valid email."; $("email").focus(); return; }
+  const btn = $("submit");
+  btn.disabled = true; btn.textContent = "One moment";
+  try {
+    const r = await fetch(CONFIG.endpoint, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ first_name: first, email, phone: $("phone").value.trim(), answers,
+        open_answer: $("open").value.trim(), utm, version: CONFIG.version, website: $("website").value }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || "Something went wrong. Please try again.");
+    pixel("Lead");
+    result(first, j);
+  } catch (x) {
+    err.textContent = x.message || "Something went wrong. Please try again.";
+    btn.disabled = false; btn.textContent = "See my results";
+  }
+});
+
+// ── Result ────────────────────────────────────────────────────────────────
+function result(first, j) {
+  const s = j.scores, low = j.lowest;
+  $("r-overall").textContent = Math.round(j.overall);
+  $("r-rows").innerHTML = "";
+  FACTORS.forEach((f) => {
+    const v = s[f.key];
+    const row = document.createElement("div");
+    row.className = "row" + (f.key === low ? " low" : "");
+    row.innerHTML = `<div class="top"><div class="name"><b>${f.numeral}</b><span>${f.name.replace(/^The /, "")}</span></div>
+      <div class="score">${v.toFixed(1)}<small> / 10</small></div></div><div class="track"><i></i></div>`;
+    $("r-rows").appendChild(row);
+    requestAnimationFrame(() => setTimeout(() => { row.querySelector("i").style.width = `${v * 10}%`; }, 60));
+  });
+  const lf = FACTORS.find((f) => f.key === low);
+  $("r-gap").textContent = `Your gap: ${lf.name}`;
+  $("r-head").textContent = RESULTS[low].head;
+  $("r-body").textContent = RESULTS[low].body;
+  const v = CONFIG.videos[low];
+  const box = $("r-video");
+  if (v && /\.mp4(\?|$)/.test(v)) box.innerHTML = `<video src="${v}" controls playsinline preload="metadata"></video>`;
+  else if (v) box.innerHTML = `<iframe src="${v}" title="A message from Christine" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+  else box.innerHTML = `<svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="27" fill="none" stroke="#B8945C" stroke-width="1.5"/><path d="M23 19 L38 28 L23 37 Z" fill="#B8945C"/></svg>`;
+  const book = $("r-book");
+  if (CONFIG.bookingUrl) book.href = CONFIG.bookingUrl; else book.removeAttribute("href");
+  show("s-result");
+}
+
+renderQ();
+</script>
+</body>
+</html>
