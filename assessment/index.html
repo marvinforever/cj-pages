@@ -340,6 +340,14 @@ $("contact").addEventListener("submit", async (e) => {
   const btn = $("submit");
   btn.disabled = true; btn.textContent = "One moment";
   try {
+    // Preview mode (no endpoint): score in the page, save nothing.
+    if (!CONFIG.endpoint) {
+      const sc = {};
+      FACTORS.forEach((f) => { sc[f.key] = Math.round(f.qs.reduce((a, [id]) => a + answers[id], 0) / f.qs.length * 10) / 10; });
+      const lo = FACTORS.map((f) => f.key).reduce((a, k) => (sc[k] < sc[a] ? k : a));
+      result(first, { scores: sc, lowest: lo, overall: (sc.attractor + sc.stabilizer + sc.x_factor) / 3 * 10 });
+      return;
+    }
     const r = await fetch(CONFIG.endpoint, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ first_name: first, email, phone: $("phone").value.trim(), answers,
