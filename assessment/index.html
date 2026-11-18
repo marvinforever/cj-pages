@@ -185,13 +185,13 @@ h1,h2{font-family:var(--serif);margin:0}
 // Everything Christine or the team will change lives here.
 const CONFIG = {
   endpoint: "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/hml-assessment",
-  version: "v1-draft",
+  version: "v2-draft",
   bookingUrl: "",                 // her calendar (with the qualifying questions on the booking form)
   metaPixelId: "",                // set to fire PageView, AssessmentStart and Lead
   videos: { attractor: "", stabilizer: "", x_factor: "" }, // embed URLs (YouTube/Vimeo) or .mp4
 };
 
-// Draft questions, 8 per factor, built on the 9 elements in Christine's
+// Draft questions, 9 per factor (3 per element), built on the 9 elements in Christine's
 // 3 Factors framework. For Christine to rewrite.
 const FACTORS = [
   { key: "attractor", numeral: "I", name: "The Attractor Factor",
@@ -205,6 +205,7 @@ const FACTORS = [
       ["a6", "The man my family gets at night is the same man my team gets during the day."],
       ["a7", "My calendar from last week would tell a stranger exactly what I value most."],
       ["a8", "When work and home pull on the same hour, I already know which one wins, and so does my family."],
+      ["a9", "I make decisions faster because I know what I won't trade, no matter what it pays."],
     ] },
   { key: "stabilizer", numeral: "II", name: "The Stabilizer Factor",
     line: "Boundaries, playbooks and communication. The structure that lets what you've built hold steady.",
@@ -214,6 +215,7 @@ const FACTORS = [
       ["s3", "I say no to good things so I have room for the best things."],
       ["s4", "My wife and I have clear agreements about who carries what, so neither of us is keeping score."],
       ["s5", "My business runs on systems, not on me being available every minute."],
+      ["s9", "My team knows exactly what I expect of them without me having to check in all the time."],
       ["s6", "When something's off between my wife and me, we talk it through within a day instead of letting it sit."],
       ["s7", "My wife would say I really listen to her, not just wait for my turn to talk."],
       ["s8", "We have a regular rhythm, even a short one, for checking in on how we're actually doing."],
@@ -226,6 +228,7 @@ const FACTORS = [
       ["x3", "My faith shapes how I run my business, not just how I spend Sunday."],
       ["x4", "I can tell an opportunity from a distraction, and I say no to the second one."],
       ["x5", "I know when to push forward and when to wait, and I trust that sense."],
+      ["x9", "Before I say yes to something big, I pause long enough to ask if it's actually mine to carry."],
       ["x6", "The people closest to me, at home and at work, are growing because of how I lead them."],
       ["x7", "If I stepped away for two weeks, my home and my business would both run well without me holding them together."],
       ["x8", "I'm intentionally building into the next generation, my kids and the leaders around me."],
