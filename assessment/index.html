@@ -44,7 +44,14 @@ h1,h2{font-family:var(--serif);margin:0}
 .grid button.sel{border-color:var(--brass);background:rgba(184,148,92,.14)}
 .anchors{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.05em;color:var(--mute);margin-top:14px}
 .back{margin-top:22px;min-height:44px;background:none;border:none;color:var(--mute);font-size:14px;padding:0;text-align:left;align-self:flex-start}
-.back[hidden]{display:none}
+[hidden]{display:none!important}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choices button{min-height:58px;background:none;border:1.5px solid var(--edge);text-align:left;padding:0 20px;font-family:var(--serif);font-size:18px;transition:border-color .15s,background .15s}
+.choices button:hover{border-color:var(--brass)}
+.choices button.sel{border-color:var(--brass);background:rgba(184,148,92,.14)}
+.gapline{font-family:var(--serif);font-size:18px;line-height:1.5;color:#C9C4B8;margin-top:22px;padding:18px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.gapline b{color:var(--stone)}
+.next{font-family:var(--serif);font-size:17px;line-height:1.6;color:#C9C4B8;margin:0}
 /* chapter */
 .chapter{margin:auto 0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
 .numeral{font-family:var(--caps);font-weight:600;font-size:72px;line-height:1;color:var(--brass)}
@@ -119,6 +126,14 @@ h1,h2{font-family:var(--serif);margin:0}
     <div class="foot"><button class="btn" id="ch-go" type="button">Continue</button></div>
   </section>
 
+  <!-- Your business -->
+  <section class="screen" id="s-biz" aria-live="polite">
+    <div class="meta" style="margin-top:0"><div class="caps">About you</div><div class="count" id="b-count"></div></div>
+    <h1 class="q" id="b-text"></h1>
+    <div class="scale" id="b-area"></div>
+    <button class="back" id="b-back" type="button">Back</button>
+  </section>
+
   <!-- Open question -->
   <section class="screen" id="s-open">
     <div class="caps">One last question</div>
@@ -167,6 +182,7 @@ h1,h2{font-family:var(--serif);margin:0}
     <div class="caps">Your High Margin Score</div>
     <div class="overall"><strong id="r-overall"></strong><span>out of 100</span></div>
     <div class="rows" id="r-rows"></div>
+    <div class="gapline" id="r-gapline"></div>
     <div class="verdict">
       <div class="caps" id="r-gap"></div>
       <h2 id="r-head"></h2>
@@ -174,7 +190,11 @@ h1,h2{font-family:var(--serif);margin:0}
     </div>
     <div class="video" id="r-video"></div>
     <div class="vlabel">A message from Christine about your result</div>
-    <div class="foot">
+    <div class="foot" id="r-foot-no" hidden>
+      <p class="next">Your full results are on their way to your inbox, along with what Christine would have you work on first.</p>
+      <a class="btn ghost" id="r-alt" href="#" hidden style="display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none"></a>
+    </div>
+    <div class="foot" id="r-foot-yes">
       <a class="btn" id="r-book" href="#" style="display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none">Book a conversation</a>
     </div>
   </section>
@@ -185,8 +205,10 @@ h1,h2{font-family:var(--serif);margin:0}
 // Everything Christine or the team will change lives here.
 const CONFIG = {
   endpoint: "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/hml-assessment",
-  version: "v2-draft",
-  bookingUrl: "",                 // her calendar (with the qualifying questions on the booking form)
+  version: "v3-draft",
+  bookingUrl: "",                 // her calendar, shown only to qualified men
+  qualifiedRevenue: ["1-5m", "5-20m", "20m+"], // must match the server (HML_QUALIFIED_REVENUE)
+  altUrl: "", altLabel: "",       // optional next step for men who don't qualify (e.g. the Challenge page)                 // her calendar (with the qualifying questions on the booking form)
   metaPixelId: "",                // set to fire PageView, AssessmentStart and Lead
   videos: { attractor: "", stabilizer: "", x_factor: "" }, // embed URLs (YouTube/Vimeo) or .mp4
 };
@@ -234,6 +256,17 @@ const FACTORS = [
       ["x8", "I'm intentionally building into the next generation, my kids and the leaders around me."],
     ] },
 ];
+
+// The business section: qualifies him and sets up the work/home gap line.
+const BUSINESS = [
+  { key: "role", text: "What best describes your role?", choices: [["founder", "Founder or owner"], ["ceo", "CEO or president"], ["executive", "Executive"], ["other", "Other"]] },
+  { key: "revenue", text: "What is your company's annual revenue?", choices: [["under-1m", "Under $1M"], ["1-5m", "$1M to $5M"], ["5-20m", "$5M to $20M"], ["20m+", "$20M or more"]] },
+  { key: "team", text: "How many people are on your team?", choices: [["1-10", "1 to 10"], ["11-50", "11 to 50"], ["51-200", "51 to 200"], ["200+", "More than 200"]] },
+  { key: "business", text: "How is the business performing compared to where you want it to be?", scale: true },
+  { key: "home", text: "How is life at home compared to where you want it to be?", scale: true },
+];
+const biz = {};
+let bi = 0;
 
 // Draft result copy, one per lowest factor. For Christine to rewrite.
 const RESULTS = {
@@ -307,7 +340,7 @@ function pick(v) {
 
 function next() {
   const cur = ALL[idx];
-  if (idx === ALL.length - 1) { show("s-open"); return; }
+  if (idx === ALL.length - 1) { bi = 0; renderBiz(); return; }
   idx++;
   if (ALL[idx].fi !== cur.fi) { chapter(ALL[idx].fi); return; }
   renderQ();
@@ -322,7 +355,47 @@ function chapter(fi) {
 }
 $("ch-go").addEventListener("click", renderQ);
 $("q-back").addEventListener("click", () => { if (idx > 0) { idx--; renderQ(); } });
-$("open-back").addEventListener("click", () => { idx = ALL.length - 1; renderQ(); });
+$("open-back").addEventListener("click", () => { bi = BUSINESS.length - 1; renderBiz(); });
+
+function renderBiz() {
+  const q = BUSINESS[bi];
+  $("b-count").textContent = `${bi + 1} of ${BUSINESS.length}`;
+  $("b-text").textContent = q.text;
+  const area = $("b-area");
+  area.innerHTML = "";
+  if (q.scale) {
+    const g = document.createElement("div"); g.className = "grid";
+    for (let n = 1; n <= 10; n++) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.dataset.v = n;
+      if (biz[q.key] === n) b.classList.add("sel");
+      b.addEventListener("click", () => pickBiz(n, b));
+      g.appendChild(b);
+    }
+    area.appendChild(g);
+    const an = document.createElement("div"); an.className = "anchors";
+    an.innerHTML = "<span>Far from it</span><span>Exactly where I want it</span>";
+    area.appendChild(an);
+  } else {
+    const c = document.createElement("div"); c.className = "choices";
+    q.choices.forEach(([v, label]) => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.dataset.v = v;
+      if (biz[q.key] === v) b.classList.add("sel");
+      b.addEventListener("click", () => pickBiz(v, b));
+      c.appendChild(b);
+    });
+    area.appendChild(c);
+  }
+  show("s-biz");
+}
+let bLocked = false;
+function pickBiz(v, btn) {
+  if (bLocked) return;
+  biz[BUSINESS[bi].key] = v;
+  btn.parentNode.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b === btn));
+  bLocked = true;
+  setTimeout(() => { bLocked = false; if (bi < BUSINESS.length - 1) { bi++; renderBiz(); } else show("s-open"); }, 260);
+}
+$("b-back").addEventListener("click", () => { if (bi > 0) { bi--; renderBiz(); } else { idx = ALL.length - 1; renderQ(); } });
 $("open-go").addEventListener("click", () => show("s-contact"));
 
 document.addEventListener("keydown", (e) => {
@@ -348,12 +421,13 @@ $("contact").addEventListener("submit", async (e) => {
       const sc = {};
       FACTORS.forEach((f) => { sc[f.key] = Math.round(f.qs.reduce((a, [id]) => a + answers[id], 0) / f.qs.length * 10) / 10; });
       const lo = FACTORS.map((f) => f.key).reduce((a, k) => (sc[k] < sc[a] ? k : a));
-      result(first, { scores: sc, lowest: lo, overall: (sc.attractor + sc.stabilizer + sc.x_factor) / 3 * 10 });
+      result(first, { scores: sc, lowest: lo, overall: (sc.attractor + sc.stabilizer + sc.x_factor) / 3 * 10,
+        qualified: CONFIG.qualifiedRevenue.includes(biz.revenue), business: biz.business, home: biz.home });
       return;
     }
     const r = await fetch(CONFIG.endpoint, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ first_name: first, email, phone: $("phone").value.trim(), answers,
+      body: JSON.stringify({ first_name: first, email, phone: $("phone").value.trim(), answers, business: biz,
         open_answer: $("open").value.trim(), utm, version: CONFIG.version, website: $("website").value }),
     });
     const j = await r.json().catch(() => ({}));
@@ -389,8 +463,13 @@ function result(first, j) {
   if (v && /\.mp4(\?|$)/.test(v)) box.innerHTML = `<video src="${v}" controls playsinline preload="metadata"></video>`;
   else if (v) box.innerHTML = `<iframe src="${v}" title="A message from Christine" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
   else box.innerHTML = `<svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="27" fill="none" stroke="#B8945C" stroke-width="1.5"/><path d="M23 19 L38 28 L23 37 Z" fill="#B8945C"/></svg>`;
+  $("r-gapline").innerHTML = `You rated your business <b>${j.business} out of 10</b> and life at home <b>${j.home} out of 10</b>.`;
+  $("r-foot-yes").hidden = !j.qualified;
+  $("r-foot-no").hidden = !!j.qualified;
   const book = $("r-book");
   if (CONFIG.bookingUrl) book.href = CONFIG.bookingUrl; else book.removeAttribute("href");
+  const alt = $("r-alt");
+  if (!j.qualified && CONFIG.altUrl) { alt.href = CONFIG.altUrl; alt.textContent = CONFIG.altLabel || "See your next step"; alt.hidden = false; }
   show("s-result");
 }
 
