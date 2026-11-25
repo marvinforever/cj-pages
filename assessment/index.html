@@ -327,7 +327,7 @@ footer{background:var(--black);border-top:1px solid var(--line);padding:26px 24p
 const CONFIG = {
   endpoint: "https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/hml-snapshot",
   version: "snapshot-v1",
-  inputMode: "buttons",           // "buttons" (0 to 10 tap targets) or "slider"
+  inputMode: "slider",            // slider, 1 to 10
   showStart: true,                // false = the ad lands straight on question 1
   calendly: "https://calendly.com/christineline", // event link; name and email are prefilled
   calendlyInline: true,           // show the calendar on the page under the invitation
@@ -463,7 +463,7 @@ function renderQ() {
   const [g, left, right] = Q[idx];
   $("q-prog").style.width = `${Math.round((idx / Q.length) * 100)}%`;
   $("q-group").textContent = GROUP_NAME[g];
-  $("q-count").textContent = `${idx + 1} of ${Q.length}`;
+  $("q-count").textContent = "";
   $("q-left").querySelector("span").textContent = left;
   $("q-right").querySelector("span").textContent = right;
   $("q-back").hidden = idx === 0 && !CONFIG.showStart;
@@ -475,8 +475,9 @@ function renderQ() {
 function shade(v) {
   const l = $("q-left"), r = $("q-right");
   if (v === null) { l.style.opacity = r.style.opacity = 1; l.style.color = r.style.color = ""; return; }
-  l.style.opacity = (0.35 + 0.65 * (1 - v / 10)).toFixed(2);
-  r.style.opacity = (0.35 + 0.65 * (v / 10)).toFixed(2);
+  const t = (v - 1) / 9;
+  l.style.opacity = (0.35 + 0.65 * (1 - t)).toFixed(2);
+  r.style.opacity = (0.35 + 0.65 * t).toFixed(2);
   l.style.color = v <= 3 ? "var(--white)" : "";
   r.style.color = v >= 7 ? "var(--white)" : "";
 }
@@ -490,17 +491,17 @@ function buildAnswer() {
   const v = answers[idx];
   if (CONFIG.inputMode === "slider") {
     const read = document.createElement("div"); read.className = "readout" + (v === null ? " untouched" : "");
-    read.textContent = v === null ? "Slide to answer" : v;
+    read.textContent = v === null ? "Slide to answer" : "";
     const wrap = document.createElement("div"); wrap.className = "slider" + (v === null ? " untouched" : "");
-    const inp = document.createElement("input"); inp.type = "range"; inp.min = 0; inp.max = 10; inp.step = 1; inp.value = v === null ? 5 : v;
-    inp.setAttribute("aria-label", "0 means the first statement, 10 means the second");
-    const paint = () => { wrap.style.setProperty("--p", `${inp.value * 10}%`); inp.style.setProperty("--p", `${inp.value * 10}%`); };
+    const inp = document.createElement("input"); inp.type = "range"; inp.min = 1; inp.max = 10; inp.step = 1; inp.value = v === null ? 5 : v;
+    inp.setAttribute("aria-label", "1 means the first statement, 10 means the second");
+    const paint = () => { const pc = `${((inp.value - 1) / 9) * 100}%`; wrap.style.setProperty("--p", pc); inp.style.setProperty("--p", pc); };
     paint();
-    const on = () => { wrap.classList.remove("untouched"); read.classList.remove("untouched"); read.textContent = inp.value; paint(); setAnswer(Number(inp.value)); ticks.querySelectorAll("span").forEach((s, i) => s.classList.toggle("on", i === Number(inp.value))); };
+    const on = () => { wrap.classList.remove("untouched"); read.classList.remove("untouched"); read.textContent = ""; paint(); setAnswer(Number(inp.value)); ticks.querySelectorAll("span").forEach((s, i) => s.classList.toggle("on", i === Number(inp.value) - 1)); };
     inp.addEventListener("input", on); inp.addEventListener("change", on);
     inp.addEventListener("pointerdown", () => { if (answers[idx] === null) on(); });
     const ticks = document.createElement("div"); ticks.className = "ticks";
-    for (let n = 0; n <= 10; n++) { const s = document.createElement("span"); s.textContent = n; if (v === n) s.className = "on"; ticks.appendChild(s); }
+    for (let n = 1; n <= 10; n++) { const s = document.createElement("span"); s.textContent = n; if (v === n) s.className = "on"; ticks.appendChild(s); }
     wrap.appendChild(inp); box.append(read, wrap, ticks);
     $("q-next").hidden = false;
   } else {
@@ -563,7 +564,7 @@ $("gate").addEventListener("submit", async (e) => {
 // ── Qualifiers ────────────────────────────────────────────────────────────
 function renderQual() {
   const q = QUAL[qi];
-  $("ql-count").textContent = `${qi + 1} of ${QUAL.length}`;
+  $("ql-count").textContent = "";
   $("ql-text").textContent = q.text;
   const area = $("ql-area"); area.innerHTML = ""; $("ql-err").textContent = "";
   const nextBtn = $("ql-next");
@@ -676,13 +677,13 @@ function applyMode() {
 }
 if (CONFIG.preview) {
   const sw = document.createElement("div"); sw.className = "modeswitch";
-  sw.innerHTML = '<button type="button" data-m="buttons">Buttons</button><button type="button" data-m="slider">Slider</button><button type="button" data-z="38">Sample: Survival</button><button type="button" data-z="64">Sample: Fine</button><button type="button" data-z="86">Sample: Fulfilling</button>';
+  sw.innerHTML = '<button type="button" data-z="38">Sample: Survival</button><button type="button" data-z="64">Sample: Fine</button><button type="button" data-z="86">Sample: Fulfilling</button>';
   document.body.appendChild(sw);
   sw.addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
     if (b.dataset.m) { CONFIG.inputMode = b.dataset.m; applyMode(); return; }
     const t = Number(b.dataset.z) / 10;
-    for (let i = 0; i < Q.length; i++) answers[i] = Math.max(0, Math.min(10, Math.round(t + ((i * 7) % 5) - 2 + (["rel","phys"].includes(Q[i][0]) ? -1 : 0))));
+    for (let i = 0; i < Q.length; i++) answers[i] = Math.max(1, Math.min(10, Math.round(t + ((i * 7) % 5) - 2 + (["rel","phys"].includes(Q[i][0]) ? -1 : 0))));
     qual.role = "founder"; qual.revenue = "10-50m"; contact.first = contact.first || "John";
     report({ ...score(answers), first_name: contact.first });
   });
