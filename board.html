@@ -57,6 +57,11 @@ header.bar .live{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-siz
   font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
 .fbtn[aria-pressed="true"]{background:var(--brass-wash);color:var(--brass);border-color:var(--brass-bright)}
 .fbtn .fct{font-family:"IBM Plex Mono",monospace;font-size:11px;opacity:.72;margin-left:3px;font-variant-numeric:tabular-nums}
+.filters{align-items:center}
+.flab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fsel{font:inherit;font-size:13px;font-weight:600;color:var(--brass);background:var(--surface);
+  border:1px solid var(--rule);border-radius:99px;padding:5px 10px;cursor:pointer;max-width:48%}
+.fsel:focus{outline:2px solid var(--brass);outline-offset:1px}
 .row{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--rule-soft);
   padding:13px 15px;cursor:pointer;font:inherit;color:inherit}
 .row:hover{background:var(--surface)}
@@ -297,11 +302,22 @@ td.msg i{color:var(--muted)}
   <div class="cols" id="cols">
     <div class="list">
       <div class="filters" id="filters">
-        <button class="fbtn" data-f="all" aria-pressed="true">Everyone</button>
-        <button class="fbtn" data-f="you" aria-pressed="false">Waiting on You</button>
-        <button class="fbtn" data-f="sent" aria-pressed="false">Response Sent</button>
-        <button class="fbtn" data-f="them" aria-pressed="false">Waiting on Them</button>
-        <button class="fbtn" data-f="none" aria-pressed="false">No Response</button>
+        <label class="flab" for="fsel">Show</label>
+        <select class="fsel" id="fsel" aria-label="Which conversations to show">
+          <option value="all">Everyone</option>
+          <option value="you">Waiting on You</option>
+          <option value="sent">Response Sent</option>
+          <option value="them">Waiting on Them</option>
+          <option value="none">No Response</option>
+        </select>
+        <label class="flab" for="ssel">Sort</label>
+        <select class="fsel" id="ssel" aria-label="How to sort them">
+          <option value="reply">Latest reply first</option>
+          <option value="new">Newest in first</option>
+          <option value="old">Longest in first</option>
+          <option value="quiet">Quietest first</option>
+          <option value="name">Name A to Z</option>
+        </select>
       </div>
       <div id="rows"></div>
     </div>
@@ -478,8 +494,11 @@ document.getElementById("brandpick").addEventListener("change",function(){
 });
 // Our own +1555 lines are hidden by default. Add &tests=1 to the link to see them.
 var showTests=qs.get("tests")==="1";
+/* Her last choice of list and order, kept between visits. */
+var sortBy=(function(){try{return localStorage.getItem("cj_sort")||"reply"}catch(e){return "reply"}})();
 var API="https://uzhnlbzhpcejpwfmzlas.supabase.co/functions/v1/cj-funnel/";
-var current=null, threads=[], filter="all", typing=false;
+var current=null, threads=[], typing=false;
+var filter=(function(){try{return localStorage.getItem("cj_filter")||"all"}catch(e){return "all"}})();
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function when(iso){var d=new Date(iso),diff=(Date.now()-d)/60000;
   if(diff<1)return"just now"; if(diff<60)return Math.round(diff)+"m";
@@ -520,13 +539,14 @@ function statusOf(t){
 var FILTER_LABEL={all:"Everyone",you:"Waiting on You",sent:"Response Sent",them:"Waiting on Them",none:"No Response"};
 var STATUS_TAG={sent:"response sent",them:"waiting on them",none:"no response"};
 function renderCounts(counts){
-  var btns=document.getElementById("filters").getElementsByClassName("fbtn");
-  for(var i=0;i<btns.length;i++){
-    var f=btns[i].getAttribute("data-f");
+  var sel=document.getElementById("fsel");
+  for(var i=0;i<sel.options.length;i++){
+    var f=sel.options[i].value;
     var n=(f==="all")?threads.length:(counts[f]||0);
-    btns[i].innerHTML=esc(FILTER_LABEL[f])+' <span class="fct">'+n+'</span>';
-    btns[i].setAttribute("aria-pressed",String(filter===f));
+    sel.options[i].textContent=FILTER_LABEL[f]+" ("+n+")";
   }
+  sel.value=filter;
+  document.getElementById("ssel").value=sortBy;
 }
 function renderRows(){
   var el=document.getElementById("rows");
@@ -534,9 +554,25 @@ function renderRows(){
   var marked=threads.map(function(t){var st=statusOf(t);counts[st]=(counts[st]||0)+1;return{t:t,st:st}});
   renderCounts(counts);
   var picked=marked.filter(function(m){return filter==="all"||m.st===filter});
-  /* pull the ones waiting on her to the top, keeping the server's order inside each group */
-  var list=picked.filter(function(m){return m.st==="you"})
-           .concat(picked.filter(function(m){return m.st!=="you"}));
+  var list;
+  if(sortBy==="reply"){
+    /* the original order: latest reply first, with the ones waiting on her
+       pulled to the top, keeping the server's order inside each group */
+    list=picked.filter(function(m){return m.st==="you"})
+         .concat(picked.filter(function(m){return m.st!=="you"}));
+  } else {
+    /* every other choice is honoured exactly, with nothing floated to the top:
+       if she asked for newest first, the newest is the first row (Christine,
+       2026-11-25). */
+    list=picked.slice();
+    var t_=function(v){var d=v?Date.parse(v):NaN;return isNaN(d)?0:d};
+    list.sort(function(a,b){
+      if(sortBy==="new")return t_(b.t.joined_at)-t_(a.t.joined_at);
+      if(sortBy==="old")return t_(a.t.joined_at)-t_(b.t.joined_at);
+      if(sortBy==="quiet")return t_(a.t.last_reply_at||a.t.last_at)-t_(b.t.last_reply_at||b.t.last_at);
+      return String(a.t.name||"").toLowerCase()<String(b.t.name||"").toLowerCase()?-1:1;
+    });
+  }
   if(!list.length){el.innerHTML='<div class="empty">Nothing here yet.</div>';return}
   el.innerHTML=list.map(function(m){
     var t=m.t, st=m.st;
@@ -792,6 +828,10 @@ document.getElementById("back").addEventListener("click",function(){
 document.getElementById("filters").addEventListener("click",function(e){
   var b=e.target.closest?e.target.closest(".fbtn"):null; if(!b)return;
   filter=b.getAttribute("data-f")||"all"; renderRows()});
+document.getElementById("fsel").addEventListener("change",function(){
+  filter=this.value;try{localStorage.setItem("cj_filter",filter)}catch(e){}renderRows()});
+document.getElementById("ssel").addEventListener("change",function(){
+  sortBy=this.value;try{localStorage.setItem("cj_sort",sortBy)}catch(e){}renderRows()});
 var ta=document.getElementById("reply"),send=document.getElementById("send");
 ta.addEventListener("input",function(){var n=this.value.trim().length;typing=n>0;
   var c=document.getElementById("count");c.textContent=n+" / 600";c.className="count"+(n>600?" over":"");
