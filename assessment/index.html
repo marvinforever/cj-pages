@@ -54,6 +54,8 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0}
 
 /* question */
 .qbody{margin-top:34px;display:flex;flex-direction:column;gap:18px;flex:1}
+.sect{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.sdesc{font-size:13px;line-height:1.5;color:var(--dim)}
 .ask{font-family:var(--serif);font-style:italic;font-size:19px;color:var(--dim)}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;align-content:center}
 .stmt{font-family:var(--serif);font-size:clamp(16px,4.4vw,20px);line-height:1.45;transition:opacity .2s,color .2s}
@@ -202,7 +204,7 @@ footer{background:var(--black);border-top:1px solid var(--line);padding:26px 24p
   <section class="screen" id="s-q" aria-live="polite">
     <div class="top">
       <div class="track"><i id="q-prog"></i></div>
-      <div class="meta"><span class="eyebrow" id="q-group"></span><span id="q-count"></span></div>
+      <div class="sect"><span class="eyebrow" id="q-group"></span><span class="sdesc" id="q-desc"></span></div><span id="q-count" hidden></span>
     </div>
     <div class="qbody">
       <div class="ask">Which is truer for you today?</div>
@@ -390,6 +392,19 @@ const MARGINS = [ // key, name, weight
 ];
 const FACTORS = [["att","Attractor"],["sta","Stabilizer"],["mul","Multiplier"]];
 const GROUP_NAME = { time:"Time", phys:"Physical", mind:"Mind share", rel:"Relational", biz:"Business", fin:"Financial", spir:"Spiritual", adv:"Adventure", att:"Attractor Factor", sta:"Stabilizer Factor", mul:"Multiplier Factor" };
+const SECTION = { // what he sees at the top of each question: section title, one line on what it measures
+  time:["Section 1 of 11 \u00b7 Your time","How much room is in your calendar."],
+  phys:["Section 2 of 11 \u00b7 Your body","Your energy, strength and stamina."],
+  mind:["Section 3 of 11 \u00b7 Your mind","Your room to think clearly instead of reacting."],
+  rel:["Section 4 of 11 \u00b7 Your relationships","Your room for the people who matter most."],
+  biz:["Section 5 of 11 \u00b7 Your business","How much the business depends on you."],
+  fin:["Section 6 of 11 \u00b7 Your finances","Financial peace, whatever the number."],
+  spir:["Section 7 of 11 \u00b7 Your faith","Your connection with God."],
+  adv:["Section 8 of 11 \u00b7 Your adventure","Your room for rest, fun and things to look forward to."],
+  att:["Section 9 of 11 \u00b7 Receive","The Attractor Factor: your clarity, identity and support."],
+  sta:["Section 10 of 11 \u00b7 Sustain","The Stabilizer Factor: your systems, boundaries and roles."],
+  mul:["Section 11 of 11 \u00b7 Multiply","The Multiplier Factor: your authority and influence."],
+};
 const ARENAS = { Home:[3,10,11,12,18], Body:[2,4,5,6,7], Peace:[16,19,20,21,24] };
 const ZONES = [
   { name:"Survival Mode", min:0, max:50, factor:"Attractor", video:1, n:1,
@@ -469,7 +484,8 @@ function started() { if (!viewed) { viewed = true; pixel("ViewContent"); } }
 function renderQ() {
   const [g, left, right] = Q[idx];
   $("q-prog").style.width = `${Math.round((idx / Q.length) * 100)}%`;
-  $("q-group").textContent = GROUP_NAME[g];
+  $("q-group").textContent = SECTION[g][0];
+  $("q-desc").textContent = SECTION[g][1];
   $("q-count").textContent = "";
   $("q-left").querySelector("span").textContent = left;
   $("q-right").querySelector("span").textContent = right;
