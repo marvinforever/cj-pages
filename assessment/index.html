@@ -54,11 +54,15 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0}
 
 /* question */
 .qbody{margin-top:34px;display:flex;flex-direction:column;gap:18px;flex:1}
-.stmt{font-family:var(--serif);font-size:clamp(21px,5.6vw,25px);line-height:1.4;transition:opacity .2s,color .2s}
+.ask{font-family:var(--serif);font-style:italic;font-size:19px;color:var(--dim)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;align-content:center}
+.stmt{font-family:var(--serif);font-size:clamp(16px,4.4vw,20px);line-height:1.45;transition:opacity .2s,color .2s}
+#q-left{padding-right:14px}
+#q-right{padding-left:14px;border-left:1px solid var(--line);text-align:right}
 .stmt small{display:block;font-family:var(--sans);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;opacity:.9}
 .vs{display:flex;align-items:center;gap:14px;color:var(--dim);font-size:11px;letter-spacing:.24em}
 .vs:before,.vs:after{content:"";flex:1;height:1px;background:var(--line)}
-.answer{margin-top:auto;padding-top:26px}
+.answer{padding-top:18px}
 /* slider */
 .slider{position:relative;padding:6px 0}
 .slider input{width:100%;-webkit-appearance:none;appearance:none;height:44px;background:transparent;margin:0}
@@ -67,6 +71,7 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0}
 .slider input::-moz-range-progress{height:2px;background:var(--gold)}
 .slider input::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--black);border:1.5px solid var(--gold);margin-top:-13px;box-shadow:0 0 0 6px rgba(184,150,78,.12)}
 .slider input::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--black);border:1.5px solid var(--gold)}
+.slider.untouched input::-webkit-slider-runnable-track{background:var(--edge)}
 .slider.untouched input::-webkit-slider-thumb{border-color:var(--dim);box-shadow:none}
 .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);padding:0 9px}
 .ticks span.on{color:var(--gold)}
@@ -200,9 +205,11 @@ footer{background:var(--black);border-top:1px solid var(--line);padding:26px 24p
       <div class="meta"><span class="eyebrow" id="q-group"></span><span id="q-count"></span></div>
     </div>
     <div class="qbody">
-      <div class="stmt" id="q-left"><small>Today it's more like</small><span></span></div>
-      <div class="vs">OR</div>
-      <div class="stmt" id="q-right"><small>Or more like</small><span></span></div>
+      <div class="ask">Which is truer for you today?</div>
+      <div class="pair">
+        <div class="stmt" id="q-left"><small>&larr; Slide left if</small><span></span></div>
+        <div class="stmt" id="q-right"><small>Slide right if &rarr;</small><span></span></div>
+      </div>
       <div class="answer" id="q-answer"></div>
     </div>
     <div class="foot">
@@ -491,7 +498,7 @@ function buildAnswer() {
   const v = answers[idx];
   if (CONFIG.inputMode === "slider") {
     const read = document.createElement("div"); read.className = "readout" + (v === null ? " untouched" : "");
-    read.textContent = v === null ? "Slide to answer" : "";
+    read.textContent = v === null ? "Drag the circle toward your answer" : "";
     const wrap = document.createElement("div"); wrap.className = "slider" + (v === null ? " untouched" : "");
     const inp = document.createElement("input"); inp.type = "range"; inp.min = 1; inp.max = 10; inp.step = 1; inp.value = v === null ? 5 : v;
     inp.setAttribute("aria-label", "1 means the first statement, 10 means the second");
