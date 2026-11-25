@@ -57,6 +57,8 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;margin:0}
 .sect{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .sdesc{font-size:13px;line-height:1.5;color:var(--dim)}
 .ask{font-family:var(--serif);font-style:italic;font-size:19px;color:var(--dim)}
+.how{font-size:13px;line-height:1.6;color:#B5B2AB;margin-top:-8px}
+.how b{color:var(--gold);font-weight:600}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;align-content:center}
 .stmt{font-family:var(--serif);font-size:clamp(16px,4.4vw,20px);line-height:1.45;transition:opacity .2s,color .2s}
 #q-left{padding-right:14px}
@@ -208,6 +210,7 @@ footer{background:var(--black);border-top:1px solid var(--line);padding:26px 24p
     </div>
     <div class="qbody">
       <div class="ask">Which is truer for you today?</div>
+      <div class="how">On a scale of 1 to 10, choose the number that best shows where you are between the two. <b>1</b> is most like the statement on the left. <b>10</b> is most like the one on the right.</div>
       <div class="pair">
         <div class="stmt" id="q-left"><small>&larr; Slide left if</small><span></span></div>
         <div class="stmt" id="q-right"><small>Slide right if &rarr;</small><span></span></div>
@@ -525,7 +528,8 @@ function buildAnswer() {
     inp.addEventListener("pointerdown", () => { if (answers[idx] === null) on(); });
     const ticks = document.createElement("div"); ticks.className = "ticks";
     for (let n = 1; n <= 10; n++) { const s = document.createElement("span"); s.textContent = n; if (v === n) s.className = "on"; ticks.appendChild(s); }
-    wrap.appendChild(inp); box.append(read, wrap, ticks);
+    const ends = document.createElement("div"); ends.className = "ends"; ends.innerHTML = "<span>&larr; Most like the left</span><span>Most like the right &rarr;</span>";
+    wrap.appendChild(inp); box.append(read, wrap, ticks, ends);
     $("q-next").hidden = false;
   } else {
     const grid = document.createElement("div"); grid.className = "grid";
